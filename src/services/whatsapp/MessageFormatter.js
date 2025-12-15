@@ -88,6 +88,7 @@ class MessageFormatter {
             caption: caption,
             mimetype: mimetype,
             filename: filename,
+            mediaUrl: msg._mediaPath || null,  // URL to access saved media
             isGroup: msg.key.remoteJid?.includes('@g.us') || false,
             quotedMessage: msg.message?.extendedTextMessage?.contextInfo?.quotedMessage ? {
                 id: msg.message.extendedTextMessage.contextInfo.stanzaId,

@@ -3,7 +3,9 @@
  * Optimized version with pre-computed caches for fast queries
  */
 class BaileysStore {
-  constructor() {
+  constructor(sessionId = null) {
+    this.sessionId = sessionId;
+    
     // Core data stores
     this.chats = new Map();
     this.contacts = new Map();
@@ -14,6 +16,9 @@ class BaileysStore {
     this.chatsOverview = new Map(); // Pre-computed chat overview
     this.profilePictures = new Map(); // Cached profile pictures
     this.contactsCache = new Map(); // Cached contacts with profile pics
+    
+    // Media files tracking: messageId -> filePath
+    this.mediaFiles = new Map();
     
     // Cache timestamps
     this.lastOverviewUpdate = 0;
@@ -124,6 +129,8 @@ class BaileysStore {
           const chatMessages = this.messages.get(key.remoteJid);
           if (chatMessages) {
             chatMessages.delete(key.id);
+            // Also delete associated media file
+            this._deleteMediaFile(key.id);
           }
         }
       }
@@ -338,11 +345,17 @@ class BaileysStore {
     
     if (!chatMessages) return [];
     
-    let messages = Array.from(chatMessages.values());
-    messages.sort((a, b) => (b.messageTimestamp || 0) - (a.messageTimestamp || 0));
+    let messages = Array.from(chatMessages.values())
+      .filter(m => m && m.key && m.messageTimestamp); // Filter invalid messages
+    
+    messages.sort((a, b) => {
+      const timeA = typeof a.messageTimestamp === 'object' ? (a.messageTimestamp.low || 0) : (a.messageTimestamp || 0);
+      const timeB = typeof b.messageTimestamp === 'object' ? (b.messageTimestamp.low || 0) : (b.messageTimestamp || 0);
+      return timeB - timeA;
+    });
     
     if (before) {
-      const beforeIndex = messages.findIndex(m => m.key.id === before);
+      const beforeIndex = messages.findIndex(m => m.key?.id === before);
       if (beforeIndex > -1) {
         messages = messages.slice(beforeIndex + 1);
       }
@@ -512,6 +525,9 @@ class BaileysStore {
    * Clear all data
    */
   clear() {
+    // Clean up all media files first
+    this._cleanupAllMedia();
+    
     this.chats.clear();
     this.contacts.clear();
     this.messages.clear();
@@ -519,6 +535,109 @@ class BaileysStore {
     this.chatsOverview.clear();
     this.profilePictures.clear();
     this.contactsCache.clear();
+    this.mediaFiles.clear();
+  }
+
+  /**
+   * Get store statistics
+   */
+  getStats() {
+    let totalMessages = 0;
+    for (const [, chatMessages] of this.messages) {
+      totalMessages += chatMessages.size;
+    }
+    
+    return {
+      chats: this.chats.size,
+      contacts: this.contacts.size,
+      messages: totalMessages,
+      groups: this.groupMetadata.size,
+      mediaFiles: this.mediaFiles.size
+    };
+  }
+
+  /**
+   * Register a media file for a message
+   */
+  registerMediaFile(messageId, filePath) {
+    this.mediaFiles.set(messageId, filePath);
+  }
+
+  /**
+   * Delete media file for a message
+   */
+  _deleteMediaFile(messageId) {
+    const fs = require('fs');
+    const filePath = this.mediaFiles.get(messageId);
+    if (filePath) {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️ [${this.sessionId}] Media deleted: ${filePath}`);
+        }
+      } catch (e) {
+        // Silent fail
+      }
+      this.mediaFiles.delete(messageId);
+    }
+  }
+
+  /**
+   * Cleanup all media files
+   */
+  _cleanupAllMedia() {
+    const fs = require('fs');
+    for (const [messageId, filePath] of this.mediaFiles) {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (e) {
+        // Silent fail
+      }
+    }
+    this.mediaFiles.clear();
+  }
+
+  /**
+   * Cleanup old media files (keep only last N messages per chat)
+   */
+  cleanupOldMedia(maxMessagesPerChat = 100) {
+    const fs = require('fs');
+    const messagesToKeep = new Set();
+    
+    // Collect message IDs that should be kept
+    for (const [chatId, chatMessages] of this.messages) {
+      const msgs = Array.from(chatMessages.values())
+        .filter(m => m && m.messageTimestamp)
+        .sort((a, b) => {
+          const timeA = typeof a.messageTimestamp === 'object' ? (a.messageTimestamp.low || 0) : (a.messageTimestamp || 0);
+          const timeB = typeof b.messageTimestamp === 'object' ? (b.messageTimestamp.low || 0) : (b.messageTimestamp || 0);
+          return timeB - timeA;
+        })
+        .slice(0, maxMessagesPerChat);
+      
+      for (const msg of msgs) {
+        if (msg.key?.id) {
+          messagesToKeep.add(msg.key.id);
+        }
+      }
+    }
+    
+    // Delete media files for messages that will be removed
+    for (const [messageId, filePath] of this.mediaFiles) {
+      if (!messagesToKeep.has(messageId)) {
+        try {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`🗑️ [${this.sessionId}] Old media cleaned: ${filePath}`);
+          }
+        } catch (e) {
+          // Silent fail
+        }
+        this.mediaFiles.delete(messageId);
+      }
+    }
   }
 }
 

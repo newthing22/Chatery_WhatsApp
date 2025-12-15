@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -12,6 +13,9 @@ const whatsappRoutes = require('./src/routes/whatsapp');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public folder (for media access)
+app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 
 // Routes
 app.get('/', (req, res) => {

@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, getContentType } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
@@ -19,6 +19,7 @@ class WhatsAppSession {
         this.connectionStatus = 'disconnected';
         this.authFolder = path.join(process.cwd(), 'sessions', sessionId);
         this.storeFile = path.join(this.authFolder, 'store.json');
+        this.mediaFolder = path.join(process.cwd(), 'public', 'media', sessionId);
         this.phoneNumber = null;
         this.name = null;
         this.store = null;
@@ -34,8 +35,8 @@ class WhatsAppSession {
                 fs.mkdirSync(this.authFolder, { recursive: true });
             }
 
-            // Initialize custom in-memory store
-            this.store = new BaileysStore();
+            // Initialize custom in-memory store with sessionId
+            this.store = new BaileysStore(this.sessionId);
 
             // Load existing store data if available
             if (fs.existsSync(this.storeFile)) {
@@ -47,9 +48,11 @@ class WhatsAppSession {
                 }
             }
 
-            // Save store periodically (every 30 seconds)
+            // Save store periodically (every 30 seconds) and cleanup old media
             this.storeInterval = setInterval(() => {
                 try {
+                    // Cleanup old media files before saving (keep only last 100 per chat)
+                    this.store.cleanupOldMedia(100);
                     this.store.writeToFile(this.storeFile);
                 } catch (e) {
                     // Silent fail
@@ -130,6 +133,9 @@ class WhatsAppSession {
             const message = m.messages[0];
             if (!message.key.fromMe && m.type === 'notify') {
                 console.log(`📩 [${this.sessionId}] New message from:`, message.key.remoteJid);
+                
+                // Auto-save media if present
+                await this._autoSaveMedia(message);
             }
         });
 
@@ -159,6 +165,15 @@ class WhatsAppSession {
             if (this.storeInterval) {
                 clearInterval(this.storeInterval);
             }
+            
+            // Clear store and delete all media files
+            if (this.store) {
+                this.store.clear();
+            }
+            
+            // Delete media folder for this session
+            this.deleteMediaFolder();
+            
             if (this.socket) {
                 await this.socket.logout();
                 this.socket = null;
@@ -182,6 +197,17 @@ class WhatsAppSession {
             }
         } catch (error) {
             console.error(`[${this.sessionId}] Error deleting auth folder:`, error);
+        }
+    }
+
+    deleteMediaFolder() {
+        try {
+            if (fs.existsSync(this.mediaFolder)) {
+                fs.rmSync(this.mediaFolder, { recursive: true, force: true });
+                console.log(`🗑️ [${this.sessionId}] Media folder deleted`);
+            }
+        } catch (error) {
+            console.error(`[${this.sessionId}] Error deleting media folder:`, error);
         }
     }
 
@@ -694,36 +720,32 @@ class WhatsAppSession {
             
             let messages = [];
             
-            // Try to fetch from server first
-            try {
-                const cursorMsg = cursor ? { 
-                    before: { 
-                        id: cursor, 
-                        fromMe: false,
-                        remoteJid: jid 
-                    } 
-                } : undefined;
+            // Try to fetch from server first (if fetchMessageHistory is available)
+            if (typeof this.socket.fetchMessageHistory === 'function') {
+                try {
+                    const cursorMsg = cursor ? { 
+                        before: { 
+                            id: cursor, 
+                            fromMe: false,
+                            remoteJid: jid 
+                        } 
+                    } : undefined;
 
-                messages = await this.socket.fetchMessageHistory(limit, cursorMsg, jid);
-            } catch (fetchError) {
-                console.log(`[${this.sessionId}] fetchMessageHistory error:`, fetchError.message);
+                    const result = await this.socket.fetchMessageHistory(limit, cursorMsg, jid);
+                    if (Array.isArray(result)) {
+                        messages = result;
+                    }
+                } catch (fetchError) {
+                    // Silent fail, will use store as fallback
+                }
             }
 
             // Fallback: Try to get messages from store
             if (messages.length === 0 && this.store) {
                 try {
-                    const storeMessages = this.store.getMessages(jid);
-                    if (storeMessages.length > 0) {
-                        let startIndex = 0;
-                        if (cursor) {
-                            const cursorIndex = storeMessages.findIndex(m => m.key?.id === cursor);
-                            if (cursorIndex !== -1) {
-                                startIndex = cursorIndex + 1;
-                            }
-                        }
-                        
-                        messages = storeMessages.slice(startIndex, startIndex + limit);
-                        console.log(`[${this.sessionId}] Loaded ${messages.length} messages from store for ${jid}`);
+                    const storeMessages = this.store.getMessages(jid, { limit, before: cursor });
+                    if (storeMessages && storeMessages.length > 0) {
+                        messages = storeMessages;
                     }
                 } catch (storeError) {
                     console.log(`[${this.sessionId}] Store messages error:`, storeError.message);
@@ -731,6 +753,7 @@ class WhatsAppSession {
             }
 
             const formattedMessages = messages
+                .filter(msg => msg && msg.key) // Filter invalid messages
                 .map(msg => MessageFormatter.formatMessage(msg))
                 .filter(msg => msg !== null);
 
@@ -823,6 +846,87 @@ class WhatsAppSession {
         } catch (error) {
             return { success: false, message: error.message };
         }
+    }
+
+    // ==================== MEDIA DOWNLOAD ====================
+
+    /**
+     * Auto-save media when message received
+     */
+    async _autoSaveMedia(message) {
+        try {
+            if (!message.message) return null;
+
+            const contentType = getContentType(message.message);
+            const mediaTypes = ['imageMessage', 'audioMessage', 'documentMessage', 'stickerMessage']; // 'videoMessage' can be added if needed
+            
+            if (!contentType || !mediaTypes.includes(contentType)) return null;
+
+            const mediaContent = message.message[contentType];
+            if (!mediaContent) return null;
+
+            // Download media
+            const buffer = await downloadMediaMessage(
+                message,
+                'buffer',
+                {},
+                { logger: console, reuploadRequest: this.socket?.updateMediaMessage }
+            );
+
+            // Create media folder structure: public/media/{sessionId}/{chatId}/
+            const chatId = message.key.remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');
+            const mediaDir = path.join(this.mediaFolder, chatId);
+            
+            if (!fs.existsSync(mediaDir)) {
+                fs.mkdirSync(mediaDir, { recursive: true });
+            }
+
+            // Generate filename
+            const mimetype = mediaContent.mimetype || this._getMimetype(contentType);
+            const ext = this._getExtFromMimetype(mimetype);
+            const filename = mediaContent.fileName || `${message.key.id}.${ext}`;
+            const filePath = path.join(mediaDir, filename);
+
+            // Save file
+            fs.writeFileSync(filePath, buffer);
+
+            // Register media file in store for cleanup tracking
+            if (this.store) {
+                this.store.registerMediaFile(message.key.id, filePath);
+            }
+
+            // Store media path in message for later reference
+            const relativePath = `/media/${this.sessionId}/${chatId}/${filename}`;
+            
+            console.log(`💾 [${this.sessionId}] Media saved: ${relativePath}`);
+
+            // Update message in store with media path
+            if (this.store) {
+                const chatMessages = this.store.messages.get(message.key.remoteJid);
+                if (chatMessages && chatMessages.has(message.key.id)) {
+                    const msg = chatMessages.get(message.key.id);
+                    if (msg) {
+                        msg._mediaPath = relativePath;
+                        msg._mediaLocalPath = filePath;
+                    }
+                }
+            }
+
+            return relativePath;
+        } catch (error) {
+            console.error(`[${this.sessionId}] Auto-save media error:`, error.message);
+            return null;
+        }
+    }
+
+    _getExtFromMimetype(mimetype) {
+        const map = {
+            'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+            'video/mp4': 'mp4', 'video/3gpp': '3gp',
+            'audio/ogg': 'ogg', 'audio/ogg; codecs=opus': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a',
+            'application/pdf': 'pdf'
+        };
+        return map[mimetype] || mimetype.split('/')[1]?.split(';')[0] || 'bin';
     }
 
     // Legacy methods for backward compatibility
