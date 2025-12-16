@@ -119,6 +119,8 @@ Dashboard requires login with username and password configured in `.env` file.
 
 ### 📸 Screenshots
 
+![Dashboard Screenshot](./screenshot/image.png)
+
 The dashboard provides a modern dark-themed interface:
 - **Session Cards** - View all sessions with status indicators
 - **QR Modal** - Full-screen QR code for easy scanning
@@ -1135,15 +1137,13 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 If you find this project helpful, consider supporting the development:
 
 <p align="center">
-  <a href="https://saweria.co/farinchan">
+  <a href="https://saweria.co/https://saweria.co/fajrichan">
     <img src="https://img.shields.io/badge/Saweria-Buy%20Me%20a%20Coffee-orange?style=for-the-badge&logo=ko-fi" alt="Saweria" />
-  </a>
-  <a href="https://trakteer.id/farinchan">
-    <img src="https://img.shields.io/badge/Trakteer-Support%20Me-red?style=for-the-badge&logo=buy-me-a-coffee" alt="Trakteer" />
   </a>
   <a href="https://paypal.me/farinchan">
     <img src="https://img.shields.io/badge/PayPal-Donate-blue?style=for-the-badge&logo=paypal" alt="PayPal" />
   </a>
+  
 </p>
 
 <p align="center">
