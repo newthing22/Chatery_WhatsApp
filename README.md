@@ -1130,11 +1130,50 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 
 ---
 
+## ☕ Support & Donate
+
+If you find this project helpful, consider supporting the development:
+
+<p align="center">
+  <a href="https://saweria.co/farinchan">
+    <img src="https://img.shields.io/badge/Saweria-Buy%20Me%20a%20Coffee-orange?style=for-the-badge&logo=ko-fi" alt="Saweria" />
+  </a>
+  <a href="https://trakteer.id/farinchan">
+    <img src="https://img.shields.io/badge/Trakteer-Support%20Me-red?style=for-the-badge&logo=buy-me-a-coffee" alt="Trakteer" />
+  </a>
+  <a href="https://paypal.me/farinchan">
+    <img src="https://img.shields.io/badge/PayPal-Donate-blue?style=for-the-badge&logo=paypal" alt="PayPal" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/farinchan/chatery_backend">
+    <img src="https://img.shields.io/github/stars/farinchan/chatery_backend?style=social" alt="GitHub Stars" />
+  </a>
+  <a href="https://github.com/farinchan/chatery_backend/fork">
+    <img src="https://img.shields.io/github/forks/farinchan/chatery_backend?style=social" alt="GitHub Forks" />
+  </a>
+</p>
+
+Your support helps me maintain and improve this project! ❤️
+
+---
+
 ## 👨‍💻 Author
 
-**Fajri Rinaldi Chan**
+**Fajri Rinaldi Chan** (Farin Chan)
 
-- GitHub: [@farinchan](https://github.com/farinchan)
+<p align="left">
+  <a href="https://github.com/farinchan">
+    <img src="https://img.shields.io/badge/GitHub-@farinchan-181717?style=for-the-badge&logo=github" alt="GitHub" />
+  </a>
+  <a href="https://www.linkedin.com/in/fajri-chan">
+    <img src="https://img.shields.io/badge/LinkedIn-farinchan-0077B5?style=for-the-badge&logo=linkedin" alt="LinkedIn" />
+  </a>
+  <a href="https://www.instagram.com/fajri_chan">
+    <img src="https://img.shields.io/badge/Instagram-@farinchan-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram" />
+  </a>
+</p>
 
 ---
 

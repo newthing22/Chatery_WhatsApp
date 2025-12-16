@@ -684,13 +684,73 @@
             border-radius: 4px;
             color: var(--primary);
         }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 24px;
+            margin-top: 48px;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .footer-credit {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .footer-credit a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-credit a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-donate {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-donate:hover {
+            background: linear-gradient(135deg, #FF8E53, #FF6B6B);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-github {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-github:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="logo">
-            <div class="logo-icon">💬</div>
             <div class="logo-text">Chatery<span>API</span></div>
         </div>
         <div class="header-actions">
@@ -881,6 +941,30 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-buttons">
+                <a href="https://saweria.co/farinchan" target="_blank" class="btn btn-donate">
+                    ☕ Buy Me a Coffee
+                </a>
+                <a href="https://trakteer.id/farinchan" target="_blank" class="btn btn-donate">
+                    🎁 Trakteer
+                </a>
+                <a href="https://github.com/farinchan/chatery_backend" target="_blank" class="btn btn-github">
+                    ⭐ Star on GitHub
+                </a>
+            </div>
+            <div class="footer-credit">
+                Made with ❤️ by <a href="https://github.com/farinchan" target="_blank">Farin Chan</a> | 
+                <strong>Chatery API</strong> - WhatsApp Multi-Session Gateway
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+                © 2024 Chatery. Open Source under MIT License.
+            </div>
+        </div>
+    </footer>
 
     <!-- QR Modal -->
     <div class="modal-overlay" id="qrModal">
