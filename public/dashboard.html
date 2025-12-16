@@ -1083,12 +1083,36 @@
         let socket = null;
         let sessions = [];
         let isAuthenticated = false;
+        let apiKey = '';
+
+        // Get API headers with API key
+        function getApiHeaders(includeContentType = true) {
+            const headers = {};
+            if (includeContentType) {
+                headers['Content-Type'] = 'application/json';
+            }
+            if (apiKey) {
+                headers['X-Api-Key'] = apiKey;
+            }
+            return headers;
+        }
+
+        // Wrapper for fetch with API key
+        async function apiFetch(url, options = {}) {
+            const headers = getApiHeaders(options.method && options.method !== 'GET');
+            options.headers = { ...headers, ...options.headers };
+            return fetch(url, options);
+        }
 
         // Check authentication on page load
         function checkAuth() {
             const authToken = sessionStorage.getItem('dashboard_auth');
+            const storedApiKey = sessionStorage.getItem('api_key');
             if (authToken === 'authenticated') {
                 isAuthenticated = true;
+                if (storedApiKey) {
+                    apiKey = storedApiKey;
+                }
                 return true;
             }
             return false;
@@ -1122,6 +1146,14 @@
                 if (data.success) {
                     sessionStorage.setItem('dashboard_auth', 'authenticated');
                     isAuthenticated = true;
+                    
+                    // Ask for API key (optional)
+                    const inputApiKey = prompt('🔑 API Key (optional - leave blank if not configured):');
+                    if (inputApiKey && inputApiKey.trim()) {
+                        apiKey = inputApiKey.trim();
+                        sessionStorage.setItem('api_key', apiKey);
+                    }
+                    
                     alert('✅ Login successful! Welcome to Chatery Dashboard.');
                     return true;
                 } else {
@@ -1137,6 +1169,8 @@
         // Logout
         function logout() {
             sessionStorage.removeItem('dashboard_auth');
+            sessionStorage.removeItem('api_key');
+            apiKey = '';
             isAuthenticated = false;
             alert('👋 Logged out successfully');
             window.location.reload();
@@ -1225,7 +1259,7 @@
         // Sessions
         async function loadSessions() {
             try {
-                const response = await fetch(`${API_BASE}/sessions`);
+                const response = await apiFetch(`${API_BASE}/sessions`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1376,9 +1410,8 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/sessions/${sessionId}/connect`, {
+                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/connect`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
                 const result = await response.json();
@@ -1410,7 +1443,7 @@
             document.getElementById('qrModal').classList.add('active');
 
             try {
-                const response = await fetch(`${API_BASE}/sessions/${sessionId}/qr`);
+                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/qr`);
                 const result = await response.json();
 
                 if (result.success && result.data?.qrCode) {
@@ -1435,9 +1468,8 @@
 
         async function reconnectSession(sessionId) {
             try {
-                const response = await fetch(`${API_BASE}/sessions/${sessionId}/connect`, {
+                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/connect`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 });
                 const result = await response.json();
@@ -1459,7 +1491,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
@@ -1487,9 +1519,8 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/chats/send-text`, {
+                const response = await apiFetch(`${API_BASE}/chats/send-text`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId, chatId: phone, message })
                 });
                 const result = await response.json();
@@ -1832,7 +1863,7 @@
             try {
                 const options = {
                     method: method,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getApiHeaders(true)
                 };
 
                 if (method !== 'GET' && method !== 'DELETE' && bodyText) {
@@ -1991,9 +2022,8 @@
             });
 
             try {
-                const response = await fetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
+                const response = await apiFetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url, events: events.length > 0 ? events : undefined })
                 });
 
@@ -2027,9 +2057,8 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
+                const response = await apiFetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
                 });
 

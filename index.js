@@ -11,6 +11,9 @@ const PORT = process.env.PORT || 3000;
 // Import Routes
 const whatsappRoutes = require('./src/routes/whatsapp');
 
+// Import Middleware
+const apiKeyAuth = require('./src/middleware/apiKeyAuth');
+
 // Import WebSocket Manager
 const wsManager = require('./src/services/websocket/WebSocketManager');
 
@@ -156,8 +159,8 @@ app.get('/api/websocket/stats', (req, res) => {
     });
 });
 
-// WhatsApp Routes
-app.use('/api/whatsapp', whatsappRoutes);
+// WhatsApp Routes (with API Key Authentication)
+app.use('/api/whatsapp', apiKeyAuth, whatsappRoutes);
 
 // 404 Handler
 app.use((req, res) => {

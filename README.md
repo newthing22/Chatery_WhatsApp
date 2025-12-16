@@ -65,7 +65,47 @@ CORS_ORIGIN=*
 # Dashboard Authentication
 DASHBOARD_USERNAME=admin
 DASHBOARD_PASSWORD=securepassword123
+
+# API Key Authentication (optional - leave empty or 'your_api_key_here' to disable)
+API_KEY=your_secret_api_key_here
 ```
+
+## 🔐 API Key Authentication
+
+All WhatsApp API endpoints are protected with API key authentication. Include the `X-Api-Key` header in your requests.
+
+### How to Enable
+
+1. Set a strong API key in your `.env` file:
+   ```env
+   API_KEY=your_super_secret_key_12345
+   ```
+
+2. Include the header in all API requests:
+   ```bash
+   curl -X GET http://localhost:3000/api/whatsapp/sessions \
+     -H "X-Api-Key: your_super_secret_key_12345"
+   ```
+
+### Disable Authentication
+
+To disable API key authentication, leave `API_KEY` empty or set it to `your_api_key_here` in `.env`:
+```env
+API_KEY=
+# or
+API_KEY=your_api_key_here
+```
+
+### Error Responses
+
+| Status | Message | Description |
+|--------|---------|-------------|
+| 401 | Missing X-Api-Key header | API key not provided in request |
+| 403 | Invalid API key | API key doesn't match |
+
+### Dashboard Integration
+
+When logging into the dashboard, you'll be prompted to enter your API key (optional). This allows the dashboard to make authenticated API calls.
 
 ## 🚀 Quick Start
 
@@ -76,17 +116,21 @@ DASHBOARD_PASSWORD=securepassword123
 
 2. **Create a session**
    ```bash
-   curl -X POST http://localhost:3000/api/whatsapp/sessions/mysession/connect
+   curl -X POST http://localhost:3000/api/whatsapp/sessions/mysession/connect \
+     -H "X-Api-Key: your_api_key" \
+     -H "Content-Type: application/json"
    ```
 
 3. **Get QR Code** - Open in browser or scan
    ```
    http://localhost:3000/api/whatsapp/sessions/mysession/qr/image
    ```
+   Note: QR image endpoint also requires API key. Use curl or include header.
 
 4. **Send a message**
    ```bash
    curl -X POST http://localhost:3000/api/whatsapp/chats/send-text \
+     -H "X-Api-Key: your_api_key" \
      -H "Content-Type: application/json" \
      -d '{"sessionId": "mysession", "chatId": "628123456789", "message": "Hello!"}'
    ```
