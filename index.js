@@ -72,7 +72,8 @@ app.get('/', (req, res) => {
                 overview: 'POST /api/whatsapp/chats/overview { sessionId, limit?, offset?, type? }',
                 contacts: 'POST /api/whatsapp/contacts { sessionId, limit?, offset?, search? }',
                 messages: 'POST /api/whatsapp/chats/messages { sessionId, chatId, limit?, cursor? }',
-                info: 'POST /api/whatsapp/chats/info { sessionId, chatId }'
+                info: 'POST /api/whatsapp/chats/info { sessionId, chatId }',
+                markRead: 'POST /api/whatsapp/chats/mark-read { sessionId, chatId, messageId? }'
             },
             groups: {
                 list: 'POST /api/whatsapp/groups { sessionId }',

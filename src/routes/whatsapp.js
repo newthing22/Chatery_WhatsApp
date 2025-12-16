@@ -589,6 +589,31 @@ router.post('/chats/info', checkSession, async (req, res) => {
     }
 });
 
+/**
+ * Mark a chat as read
+ * Body: { sessionId, chatId, messageId? }
+ */
+router.post('/chats/mark-read', checkSession, async (req, res) => {
+    try {
+        const { chatId, messageId } = req.body;
+        
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chatId'
+            });
+        }
+        
+        const result = await req.session.markChatRead(chatId, messageId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // ==================== GROUP MANAGEMENT ====================
 
 /**

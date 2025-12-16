@@ -1080,6 +1080,52 @@ class WhatsAppSession {
         }
     }
 
+    // ==================== CHAT READ STATUS ====================
+
+    /**
+     * Mark a chat as read
+     * @param {string} chatId - Chat ID (phone number or group ID)
+     * @param {string|null} messageId - Optional specific message ID to mark as read
+     */
+    async markChatRead(chatId, messageId = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+
+            // If specific message ID provided, use it
+            if (messageId) {
+                await this.socket.readMessages([{
+                    remoteJid: jid,
+                    id: messageId,
+                    participant: this.isGroupId(jid) ? undefined : undefined
+                }]);
+            } else {
+                // Mark all messages in chat as read using chatModify
+                await this.socket.chatModify(
+                    { markRead: true, lastMessages: [] },
+                    jid
+                );
+            }
+
+            console.log(`✅ [${this.sessionId}] Chat marked as read: ${jid}`);
+
+            return {
+                success: true,
+                message: 'Chat marked as read',
+                data: {
+                    chatId: jid,
+                    messageId: messageId || null
+                }
+            };
+        } catch (error) {
+            console.error(`[${this.sessionId}] Mark read error:`, error.message);
+            return { success: false, message: error.message };
+        }
+    }
+
     // ==================== MEDIA DOWNLOAD ====================
 
     /**
