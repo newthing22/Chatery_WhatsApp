@@ -1,5 +1,5 @@
 {
-  "name": "chatery_backend",
+  "name": "chatery_whatsapp",
   "version": "1.0.0",
   "description": "Backend for chatery.app",
   "main": "index.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farinchan/chatery_backend.git"
+    "url": "git+https://github.com/farinchan/chatery_whatsapp.git"
   },
   "keywords": [
     "chatery"
@@ -18,9 +18,9 @@
   "author": "Fajri Rinaldi Chan",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/farinchan/chatery_backend/issues"
+    "url": "https://github.com/farinchan/chatery_whatsapp/issues"
   },
-  "homepage": "https://github.com/farinchan/chatery_backend#readme",
+  "homepage": "https://github.com/farinchan/chatery_whatsapp#readme",
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "cors": "^2.8.5",
