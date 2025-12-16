@@ -328,16 +328,16 @@ const checkSession = (req, res, next) => {
 // Send text message
 router.post('/chats/send-text', checkSession, async (req, res) => {
     try {
-        const { to, message } = req.body;
+        const { chatId, message } = req.body;
         
-        if (!to || !message) {
+        if (!chatId || !message) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: to, message'
+                message: 'Missing required fields: chatId, message'
             });
         }
 
-        const result = await req.session.sendTextMessage(to, message);
+        const result = await req.session.sendTextMessage(chatId, message);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -350,16 +350,16 @@ router.post('/chats/send-text', checkSession, async (req, res) => {
 // Send image
 router.post('/chats/send-image', checkSession, async (req, res) => {
     try {
-        const { to, imageUrl, caption } = req.body;
+        const { chatId, imageUrl, caption } = req.body;
         
-        if (!to || !imageUrl) {
+        if (!chatId || !imageUrl) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: to, imageUrl'
+                message: 'Missing required fields: chatId, imageUrl'
             });
         }
 
-        const result = await req.session.sendImage(to, imageUrl, caption || '');
+        const result = await req.session.sendImage(chatId, imageUrl, caption || '');
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -372,16 +372,16 @@ router.post('/chats/send-image', checkSession, async (req, res) => {
 // Send document
 router.post('/chats/send-document', checkSession, async (req, res) => {
     try {
-        const { to, documentUrl, filename, mimetype } = req.body;
+        const { chatId, documentUrl, filename, mimetype } = req.body;
         
-        if (!to || !documentUrl || !filename) {
+        if (!chatId || !documentUrl || !filename) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: to, documentUrl, filename'
+                message: 'Missing required fields: chatId, documentUrl, filename'
             });
         }
 
-        const result = await req.session.sendDocument(to, documentUrl, filename, mimetype);
+        const result = await req.session.sendDocument(chatId, documentUrl, filename, mimetype);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -394,16 +394,16 @@ router.post('/chats/send-document', checkSession, async (req, res) => {
 // Send location
 router.post('/chats/send-location', checkSession, async (req, res) => {
     try {
-        const { to, latitude, longitude, name } = req.body;
+        const { chatId, latitude, longitude, name } = req.body;
         
-        if (!to || latitude === undefined || longitude === undefined) {
+        if (!chatId || latitude === undefined || longitude === undefined) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: to, latitude, longitude'
+                message: 'Missing required fields: chatId, latitude, longitude'
             });
         }
 
-        const result = await req.session.sendLocation(to, latitude, longitude, name || '');
+        const result = await req.session.sendLocation(chatId, latitude, longitude, name || '');
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -416,16 +416,16 @@ router.post('/chats/send-location', checkSession, async (req, res) => {
 // Send contact
 router.post('/chats/send-contact', checkSession, async (req, res) => {
     try {
-        const { to, contactName, contactPhone } = req.body;
+        const { chatId, contactName, contactPhone } = req.body;
         
-        if (!to || !contactName || !contactPhone) {
+        if (!chatId || !contactName || !contactPhone) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: to, contactName, contactPhone'
+                message: 'Missing required fields: chatId, contactName, contactPhone'
             });
         }
 
-        const result = await req.session.sendContact(to, contactName, contactPhone);
+        const result = await req.session.sendContact(chatId, contactName, contactPhone);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -438,16 +438,16 @@ router.post('/chats/send-contact', checkSession, async (req, res) => {
 // Send button message
 router.post('/chats/send-button', checkSession, async (req, res) => {
     try {
-        const { to, text, footer, buttons } = req.body;
+        const { chatId, text, footer, buttons } = req.body;
         
-        if (!to || !text || !buttons || !Array.isArray(buttons)) {
+        if (!chatId || !text || !buttons || !Array.isArray(buttons)) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: to, text, buttons (array)'
+                message: 'Missing required fields: chatId, text, buttons (array)'
             });
         }
 
-        const result = await req.session.sendButton(to, text, footer || '', buttons);
+        const result = await req.session.sendButton(chatId, text, footer || '', buttons);
         res.json(result);
     } catch (error) {
         res.status(500).json({

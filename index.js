@@ -58,15 +58,15 @@ app.get('/', (req, res) => {
                 delete: 'DELETE /api/whatsapp/sessions/:sessionId'
             },
             chat: {
-                sendText: 'POST /api/whatsapp/chats/send-text',
-                sendImage: 'POST /api/whatsapp/chats/send-image',
-                sendDocument: 'POST /api/whatsapp/chats/send-document',
-                sendLocation: 'POST /api/whatsapp/chats/send-location',
-                sendContact: 'POST /api/whatsapp/chats/send-contact',
-                sendButton: 'POST /api/whatsapp/chats/send-button',
-                checkNumber: 'POST /api/whatsapp/chats/check-number',
-                profilePicture: 'POST /api/whatsapp/chats/profile-picture',
-                contactInfo: 'POST /api/whatsapp/chats/contact-info'
+                sendText: 'POST /api/whatsapp/chats/send-text { sessionId, chatId, message }',
+                sendImage: 'POST /api/whatsapp/chats/send-image { sessionId, chatId, imageUrl, caption? }',
+                sendDocument: 'POST /api/whatsapp/chats/send-document { sessionId, chatId, documentUrl, filename, mimetype? }',
+                sendLocation: 'POST /api/whatsapp/chats/send-location { sessionId, chatId, latitude, longitude, name? }',
+                sendContact: 'POST /api/whatsapp/chats/send-contact { sessionId, chatId, contactName, contactPhone }',
+                sendButton: 'POST /api/whatsapp/chats/send-button { sessionId, chatId, text, footer?, buttons[] }',
+                checkNumber: 'POST /api/whatsapp/chats/check-number { sessionId, phone }',
+                profilePicture: 'POST /api/whatsapp/chats/profile-picture { sessionId, phone }',
+                contactInfo: 'POST /api/whatsapp/chats/contact-info { sessionId, phone }'
             },
             history: {
                 overview: 'POST /api/whatsapp/chats/overview { sessionId, limit?, offset?, type? }',

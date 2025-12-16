@@ -487,13 +487,13 @@ class WhatsAppSession {
 
     // ==================== SEND MESSAGES ====================
 
-    async sendTextMessage(to, message) {
+    async sendTextMessage(chatId, message) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
-            const jid = this.formatPhoneNumber(to);
+            const jid = this.formatChatId(chatId);
             const result = await this.socket.sendMessage(jid, { text: message });
             
             return { 
@@ -501,7 +501,7 @@ class WhatsAppSession {
                 message: 'Message sent successfully',
                 data: {
                     messageId: result.key.id,
-                    to: jid,
+                    chatId: jid,
                     timestamp: new Date().toISOString()
                 }
             };
@@ -510,13 +510,13 @@ class WhatsAppSession {
         }
     }
 
-    async sendImage(to, imageUrl, caption = '') {
+    async sendImage(chatId, imageUrl, caption = '') {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
-            const jid = this.formatPhoneNumber(to);
+            const jid = this.formatChatId(chatId);
             const result = await this.socket.sendMessage(jid, {
                 image: { url: imageUrl },
                 caption: caption
@@ -527,7 +527,7 @@ class WhatsAppSession {
                 message: 'Image sent successfully',
                 data: {
                     messageId: result.key.id,
-                    to: jid,
+                    chatId: jid,
                     timestamp: new Date().toISOString()
                 }
             };
@@ -536,13 +536,13 @@ class WhatsAppSession {
         }
     }
 
-    async sendDocument(to, documentUrl, filename, mimetype = 'application/pdf') {
+    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf') {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
-            const jid = this.formatPhoneNumber(to);
+            const jid = this.formatChatId(chatId);
             const result = await this.socket.sendMessage(jid, {
                 document: { url: documentUrl },
                 fileName: filename,
@@ -554,7 +554,7 @@ class WhatsAppSession {
                 message: 'Document sent successfully',
                 data: {
                     messageId: result.key.id,
-                    to: jid,
+                    chatId: jid,
                     timestamp: new Date().toISOString()
                 }
             };
@@ -563,13 +563,13 @@ class WhatsAppSession {
         }
     }
 
-    async sendLocation(to, latitude, longitude, name = '') {
+    async sendLocation(chatId, latitude, longitude, name = '') {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
-            const jid = this.formatPhoneNumber(to);
+            const jid = this.formatChatId(chatId);
             const result = await this.socket.sendMessage(jid, {
                 location: {
                     degreesLatitude: latitude,
@@ -583,7 +583,7 @@ class WhatsAppSession {
                 message: 'Location sent successfully',
                 data: {
                     messageId: result.key.id,
-                    to: jid,
+                    chatId: jid,
                     timestamp: new Date().toISOString()
                 }
             };
@@ -592,13 +592,13 @@ class WhatsAppSession {
         }
     }
 
-    async sendContact(to, contactName, contactPhone) {
+    async sendContact(chatId, contactName, contactPhone) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
-            const jid = this.formatPhoneNumber(to);
+            const jid = this.formatChatId(chatId);
             const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${contactName}\nTEL;type=CELL;type=VOICE;waid=${contactPhone}:+${contactPhone}\nEND:VCARD`;
             
             const result = await this.socket.sendMessage(jid, {
@@ -613,7 +613,7 @@ class WhatsAppSession {
                 message: 'Contact sent successfully',
                 data: {
                     messageId: result.key.id,
-                    to: jid,
+                    chatId: jid,
                     timestamp: new Date().toISOString()
                 }
             };
@@ -622,13 +622,13 @@ class WhatsAppSession {
         }
     }
 
-    async sendButton(to, text, footer, buttons) {
+    async sendButton(chatId, text, footer, buttons) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
-            const jid = this.formatPhoneNumber(to);
+            const jid = this.formatChatId(chatId);
             const result = await this.socket.sendMessage(jid, {
                 text: text,
                 footer: footer,
@@ -645,7 +645,7 @@ class WhatsAppSession {
                 message: 'Button message sent successfully',
                 data: {
                     messageId: result.key.id,
-                    to: jid,
+                    chatId: jid,
                     timestamp: new Date().toISOString()
                 }
             };

@@ -782,6 +782,7 @@
                                     <option value="POST|/api/whatsapp/contacts">POST /contacts - Get contacts</option>
                                     <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Get chat messages</option>
                                     <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Get chat info</option>
+                                    <option value="POST|/api/whatsapp/chats/mark-read">POST /chats/mark-read - Mark chat as read</option>
                                 </optgroup>
                                 <optgroup label="Groups - Basic">
                                     <option value="POST|/api/whatsapp/groups">POST /groups - Get all groups</option>
@@ -1358,7 +1359,7 @@
                 const response = await fetch(`${API_BASE}/chats/send-text`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId, to: phone, message })
+                    body: JSON.stringify({ sessionId, chatId: phone, message })
                 });
                 const result = await response.json();
 
@@ -1433,14 +1434,14 @@
             else if (path.includes('/chats/send-text')) {
                 body = { 
                     sessionId: '', 
-                    to: '628123456789', 
+                    chatId: '628123456789', 
                     message: 'Hello from Chatery API!' 
                 };
-                helpText = '📝 <code>to</code>: Phone number with country code (without +). Can also be group ID ending with @g.us';
+                helpText = '📝 <code>chatId</code>: Phone number with country code (without +) or group ID ending with @g.us';
             } else if (path.includes('/chats/send-image')) {
                 body = { 
                     sessionId: '', 
-                    to: '628123456789', 
+                    chatId: '628123456789', 
                     imageUrl: 'https://example.com/image.jpg', 
                     caption: 'Image caption' 
                 };
@@ -1448,7 +1449,7 @@
             } else if (path.includes('/chats/send-document')) {
                 body = { 
                     sessionId: '', 
-                    to: '628123456789', 
+                    chatId: '628123456789', 
                     documentUrl: 'https://example.com/document.pdf', 
                     filename: 'document.pdf',
                     mimetype: 'application/pdf'
@@ -1457,7 +1458,7 @@
             } else if (path.includes('/chats/send-location')) {
                 body = { 
                     sessionId: '', 
-                    to: '628123456789', 
+                    chatId: '628123456789', 
                     latitude: -6.2088,
                     longitude: 106.8456,
                     name: 'Jakarta, Indonesia'
@@ -1466,7 +1467,7 @@
             } else if (path.includes('/chats/send-contact')) {
                 body = { 
                     sessionId: '', 
-                    to: '628123456789', 
+                    chatId: '628123456789', 
                     contactName: 'John Doe',
                     contactPhone: '628987654321'
                 };
@@ -1474,7 +1475,7 @@
             } else if (path.includes('/chats/send-button')) {
                 body = { 
                     sessionId: '', 
-                    to: '628123456789', 
+                    chatId: '628123456789', 
                     text: 'Please choose an option:',
                     footer: 'Powered by Chatery',
                     buttons: ['Option 1', 'Option 2', 'Option 3']
@@ -1524,6 +1525,13 @@
                     chatId: '628123456789@s.whatsapp.net'
                 };
                 helpText = 'ℹ️ Get detailed information about a chat or group.';
+            } else if (path.includes('/chats/mark-read')) {
+                body = { 
+                    sessionId: '', 
+                    chatId: '628123456789',
+                    messageId: null
+                };
+                helpText = '✅ Mark a chat as read. <code>messageId</code>: (optional) Specific message ID to mark as read.';
             }
             // Groups - Basic
             else if (path === 'POST|/api/whatsapp/groups' || path.endsWith('/groups')) {

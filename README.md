@@ -87,7 +87,7 @@ DASHBOARD_PASSWORD=securepassword123
    ```bash
    curl -X POST http://localhost:3000/api/whatsapp/chats/send-text \
      -H "Content-Type: application/json" \
-     -d '{"sessionId": "mysession", "to": "628123456789", "message": "Hello!"}'
+     -d '{"sessionId": "mysession", "chatId": "628123456789", "message": "Hello!"}'
    ```
 
 ---
@@ -286,10 +286,16 @@ POST /chats/send-text
 ```json
 {
   "sessionId": "mysession",
-  "to": "628123456789",
+  "chatId": "628123456789",
   "message": "Hello, World!"
 }
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number (628xxx) or group ID (xxx@g.us) |
+| `message` | string | Required. Text message to send |
 
 #### Send Image
 ```http
@@ -300,11 +306,18 @@ POST /chats/send-image
 ```json
 {
   "sessionId": "mysession",
-  "to": "628123456789",
+  "chatId": "628123456789",
   "imageUrl": "https://example.com/image.jpg",
   "caption": "Check this out!"
 }
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `imageUrl` | string | Required. Direct URL to image file |
+| `caption` | string | Optional. Image caption |
 
 #### Send Document
 ```http
@@ -315,12 +328,20 @@ POST /chats/send-document
 ```json
 {
   "sessionId": "mysession",
-  "to": "628123456789",
+  "chatId": "628123456789",
   "documentUrl": "https://example.com/document.pdf",
   "filename": "document.pdf",
   "mimetype": "application/pdf"
 }
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `documentUrl` | string | Required. Direct URL to document |
+| `filename` | string | Required. Filename to display |
+| `mimetype` | string | Optional. MIME type (default: application/pdf) |
 
 #### Send Location
 ```http
@@ -331,12 +352,20 @@ POST /chats/send-location
 ```json
 {
   "sessionId": "mysession",
-  "to": "628123456789",
+  "chatId": "628123456789",
   "latitude": -6.2088,
   "longitude": 106.8456,
   "name": "Jakarta, Indonesia"
 }
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `latitude` | number | Required. GPS latitude |
+| `longitude` | number | Required. GPS longitude |
+| `name` | string | Optional. Location name |
 
 #### Send Contact
 ```http
@@ -347,11 +376,18 @@ POST /chats/send-contact
 ```json
 {
   "sessionId": "mysession",
-  "to": "628123456789",
+  "chatId": "628123456789",
   "contactName": "John Doe",
   "contactPhone": "628987654321"
 }
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `contactName` | string | Required. Contact display name |
+| `contactPhone` | string | Required. Contact phone number |
 
 #### Send Button Message
 ```http
@@ -362,12 +398,20 @@ POST /chats/send-button
 ```json
 {
   "sessionId": "mysession",
-  "to": "628123456789",
+  "chatId": "628123456789",
   "text": "Please choose an option:",
   "footer": "Powered by Chatery",
   "buttons": ["Option 1", "Option 2", "Option 3"]
 }
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `text` | string | Required. Button message text |
+| `footer` | string | Optional. Footer text |
+| `buttons` | array | Required. Array of button labels (max 3) |
 
 #### Check Phone Number
 ```http
@@ -463,6 +507,26 @@ POST /chats/info
   "chatId": "628123456789@s.whatsapp.net"
 }
 ```
+
+#### Mark Chat as Read
+```http
+POST /chats/mark-read
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "messageId": null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `messageId` | string | Optional. Specific message ID to mark as read |
 
 ---
 
