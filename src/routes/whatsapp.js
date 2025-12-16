@@ -328,7 +328,7 @@ const checkSession = (req, res, next) => {
 // Send text message
 router.post('/chats/send-text', checkSession, async (req, res) => {
     try {
-        const { chatId, message } = req.body;
+        const { chatId, message, typingTime = 0 } = req.body;
         
         if (!chatId || !message) {
             return res.status(400).json({
@@ -337,7 +337,7 @@ router.post('/chats/send-text', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendTextMessage(chatId, message);
+        const result = await req.session.sendTextMessage(chatId, message, typingTime);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -350,7 +350,7 @@ router.post('/chats/send-text', checkSession, async (req, res) => {
 // Send image
 router.post('/chats/send-image', checkSession, async (req, res) => {
     try {
-        const { chatId, imageUrl, caption } = req.body;
+        const { chatId, imageUrl, caption, typingTime = 0 } = req.body;
         
         if (!chatId || !imageUrl) {
             return res.status(400).json({
@@ -359,7 +359,7 @@ router.post('/chats/send-image', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendImage(chatId, imageUrl, caption || '');
+        const result = await req.session.sendImage(chatId, imageUrl, caption || '', typingTime);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -372,7 +372,7 @@ router.post('/chats/send-image', checkSession, async (req, res) => {
 // Send document
 router.post('/chats/send-document', checkSession, async (req, res) => {
     try {
-        const { chatId, documentUrl, filename, mimetype } = req.body;
+        const { chatId, documentUrl, filename, mimetype, typingTime = 0 } = req.body;
         
         if (!chatId || !documentUrl || !filename) {
             return res.status(400).json({
@@ -381,7 +381,7 @@ router.post('/chats/send-document', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendDocument(chatId, documentUrl, filename, mimetype);
+        const result = await req.session.sendDocument(chatId, documentUrl, filename, mimetype, typingTime);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -394,7 +394,7 @@ router.post('/chats/send-document', checkSession, async (req, res) => {
 // Send location
 router.post('/chats/send-location', checkSession, async (req, res) => {
     try {
-        const { chatId, latitude, longitude, name } = req.body;
+        const { chatId, latitude, longitude, name, typingTime = 0 } = req.body;
         
         if (!chatId || latitude === undefined || longitude === undefined) {
             return res.status(400).json({
@@ -403,7 +403,7 @@ router.post('/chats/send-location', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendLocation(chatId, latitude, longitude, name || '');
+        const result = await req.session.sendLocation(chatId, latitude, longitude, name || '', typingTime);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -416,7 +416,7 @@ router.post('/chats/send-location', checkSession, async (req, res) => {
 // Send contact
 router.post('/chats/send-contact', checkSession, async (req, res) => {
     try {
-        const { chatId, contactName, contactPhone } = req.body;
+        const { chatId, contactName, contactPhone, typingTime = 0 } = req.body;
         
         if (!chatId || !contactName || !contactPhone) {
             return res.status(400).json({
@@ -425,7 +425,7 @@ router.post('/chats/send-contact', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendContact(chatId, contactName, contactPhone);
+        const result = await req.session.sendContact(chatId, contactName, contactPhone, typingTime);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -438,7 +438,7 @@ router.post('/chats/send-contact', checkSession, async (req, res) => {
 // Send button message
 router.post('/chats/send-button', checkSession, async (req, res) => {
     try {
-        const { chatId, text, footer, buttons } = req.body;
+        const { chatId, text, footer, buttons, typingTime = 0 } = req.body;
         
         if (!chatId || !text || !buttons || !Array.isArray(buttons)) {
             return res.status(400).json({
@@ -447,7 +447,37 @@ router.post('/chats/send-button', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendButton(chatId, text, footer || '', buttons);
+        const result = await req.session.sendButton(chatId, text, footer || '', buttons, typingTime);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Send presence update (typing indicator)
+router.post('/chats/presence', checkSession, async (req, res) => {
+    try {
+        const { chatId, presence = 'composing' } = req.body;
+        
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chatId'
+            });
+        }
+        
+        const validPresences = ['composing', 'recording', 'paused', 'available', 'unavailable'];
+        if (!validPresences.includes(presence)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid presence. Must be one of: ${validPresences.join(', ')}`
+            });
+        }
+        
+        const result = await req.session.sendPresenceUpdate(chatId, presence);
         res.json(result);
     } catch (error) {
         res.status(500).json({

@@ -58,12 +58,13 @@ app.get('/', (req, res) => {
                 delete: 'DELETE /api/whatsapp/sessions/:sessionId'
             },
             chat: {
-                sendText: 'POST /api/whatsapp/chats/send-text { sessionId, chatId, message }',
-                sendImage: 'POST /api/whatsapp/chats/send-image { sessionId, chatId, imageUrl, caption? }',
-                sendDocument: 'POST /api/whatsapp/chats/send-document { sessionId, chatId, documentUrl, filename, mimetype? }',
-                sendLocation: 'POST /api/whatsapp/chats/send-location { sessionId, chatId, latitude, longitude, name? }',
-                sendContact: 'POST /api/whatsapp/chats/send-contact { sessionId, chatId, contactName, contactPhone }',
-                sendButton: 'POST /api/whatsapp/chats/send-button { sessionId, chatId, text, footer?, buttons[] }',
+                sendText: 'POST /api/whatsapp/chats/send-text { sessionId, chatId, message, typingTime? }',
+                sendImage: 'POST /api/whatsapp/chats/send-image { sessionId, chatId, imageUrl, caption?, typingTime? }',
+                sendDocument: 'POST /api/whatsapp/chats/send-document { sessionId, chatId, documentUrl, filename, mimetype?, typingTime? }',
+                sendLocation: 'POST /api/whatsapp/chats/send-location { sessionId, chatId, latitude, longitude, name?, typingTime? }',
+                sendContact: 'POST /api/whatsapp/chats/send-contact { sessionId, chatId, contactName, contactPhone, typingTime? }',
+                sendButton: 'POST /api/whatsapp/chats/send-button { sessionId, chatId, text, footer?, buttons[], typingTime? }',
+                sendPresenceUpdate: 'POST /api/whatsapp/chats/presence { sessionId, chatId, presence }',
                 checkNumber: 'POST /api/whatsapp/chats/check-number { sessionId, phone }',
                 profilePicture: 'POST /api/whatsapp/chats/profile-picture { sessionId, phone }',
                 contactInfo: 'POST /api/whatsapp/chats/contact-info { sessionId, phone }'

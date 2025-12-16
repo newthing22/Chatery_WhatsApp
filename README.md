@@ -277,6 +277,8 @@ DELETE /sessions/:sessionId
 
 ### Messaging
 
+> **💡 Typing Indicator**: All messaging endpoints support `typingTime` parameter (in milliseconds) to simulate typing before sending the message. This makes the bot appear more human-like.
+
 #### Send Text Message
 ```http
 POST /chats/send-text
@@ -287,7 +289,8 @@ POST /chats/send-text
 {
   "sessionId": "mysession",
   "chatId": "628123456789",
-  "message": "Hello, World!"
+  "message": "Hello, World!",
+  "typingTime": 2000
 }
 ```
 
@@ -296,6 +299,7 @@ POST /chats/send-text
 | `sessionId` | string | Required. Session ID |
 | `chatId` | string | Required. Phone number (628xxx) or group ID (xxx@g.us) |
 | `message` | string | Required. Text message to send |
+| `typingTime` | number | Optional. Typing duration in ms before sending (default: 0) |
 
 #### Send Image
 ```http
@@ -308,7 +312,8 @@ POST /chats/send-image
   "sessionId": "mysession",
   "chatId": "628123456789",
   "imageUrl": "https://example.com/image.jpg",
-  "caption": "Check this out!"
+  "caption": "Check this out!",
+  "typingTime": 1500
 }
 ```
 
@@ -318,6 +323,7 @@ POST /chats/send-image
 | `chatId` | string | Required. Phone number or group ID |
 | `imageUrl` | string | Required. Direct URL to image file |
 | `caption` | string | Optional. Image caption |
+| `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 
 #### Send Document
 ```http
@@ -331,7 +337,8 @@ POST /chats/send-document
   "chatId": "628123456789",
   "documentUrl": "https://example.com/document.pdf",
   "filename": "document.pdf",
-  "mimetype": "application/pdf"
+  "mimetype": "application/pdf",
+  "typingTime": 1000
 }
 ```
 
@@ -342,6 +349,7 @@ POST /chats/send-document
 | `documentUrl` | string | Required. Direct URL to document |
 | `filename` | string | Required. Filename to display |
 | `mimetype` | string | Optional. MIME type (default: application/pdf) |
+| `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 
 #### Send Location
 ```http
@@ -355,7 +363,8 @@ POST /chats/send-location
   "chatId": "628123456789",
   "latitude": -6.2088,
   "longitude": 106.8456,
-  "name": "Jakarta, Indonesia"
+  "name": "Jakarta, Indonesia",
+  "typingTime": 1000
 }
 ```
 
@@ -366,6 +375,7 @@ POST /chats/send-location
 | `latitude` | number | Required. GPS latitude |
 | `longitude` | number | Required. GPS longitude |
 | `name` | string | Optional. Location name |
+| `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 
 #### Send Contact
 ```http
@@ -378,7 +388,8 @@ POST /chats/send-contact
   "sessionId": "mysession",
   "chatId": "628123456789",
   "contactName": "John Doe",
-  "contactPhone": "628987654321"
+  "contactPhone": "628987654321",
+  "typingTime": 500
 }
 ```
 
@@ -388,6 +399,7 @@ POST /chats/send-contact
 | `chatId` | string | Required. Phone number or group ID |
 | `contactName` | string | Required. Contact display name |
 | `contactPhone` | string | Required. Contact phone number |
+| `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 
 #### Send Button Message
 ```http
@@ -401,7 +413,8 @@ POST /chats/send-button
   "chatId": "628123456789",
   "text": "Please choose an option:",
   "footer": "Powered by Chatery",
-  "buttons": ["Option 1", "Option 2", "Option 3"]
+  "buttons": ["Option 1", "Option 2", "Option 3"],
+  "typingTime": 2000
 }
 ```
 
@@ -412,6 +425,27 @@ POST /chats/send-button
 | `text` | string | Required. Button message text |
 | `footer` | string | Optional. Footer text |
 | `buttons` | array | Required. Array of button labels (max 3) |
+| `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+
+#### Send Presence Update
+```http
+POST /chats/presence
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "presence": "composing"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `presence` | string | Required. `composing`, `recording`, `paused`, `available`, `unavailable` |
 
 #### Check Phone Number
 ```http

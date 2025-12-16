@@ -774,6 +774,7 @@
                                     <option value="POST|/api/whatsapp/chats/send-location">POST /chats/send-location - Send location</option>
                                     <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact - Send contact</option>
                                     <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send button message</option>
+                                    <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing indicator</option>
                                     <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number - Check number exists</option>
                                     <option value="POST|/api/whatsapp/chats/profile-picture">POST /chats/profile-picture - Get profile picture</option>
                                 </optgroup>
@@ -1435,52 +1436,65 @@
                 body = { 
                     sessionId: '', 
                     chatId: '628123456789', 
-                    message: 'Hello from Chatery API!' 
+                    message: 'Hello from Chatery API!',
+                    typingTime: 0
                 };
-                helpText = '📝 <code>chatId</code>: Phone number with country code (without +) or group ID ending with @g.us';
+                helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms before sending (0 = no typing).';
             } else if (path.includes('/chats/send-image')) {
                 body = { 
                     sessionId: '', 
                     chatId: '628123456789', 
                     imageUrl: 'https://example.com/image.jpg', 
-                    caption: 'Image caption' 
+                    caption: 'Image caption',
+                    typingTime: 0
                 };
-                helpText = '🖼️ <code>imageUrl</code>: Direct URL to image file (JPG, PNG, GIF, WebP)';
+                helpText = '🖼️ <code>imageUrl</code>: Direct URL to image. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-document')) {
                 body = { 
                     sessionId: '', 
                     chatId: '628123456789', 
                     documentUrl: 'https://example.com/document.pdf', 
                     filename: 'document.pdf',
-                    mimetype: 'application/pdf'
+                    mimetype: 'application/pdf',
+                    typingTime: 0
                 };
-                helpText = '📄 <code>mimetype</code>: MIME type of document (e.g., application/pdf, application/msword)';
+                helpText = '📄 <code>mimetype</code>: MIME type. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-location')) {
                 body = { 
                     sessionId: '', 
                     chatId: '628123456789', 
                     latitude: -6.2088,
                     longitude: 106.8456,
-                    name: 'Jakarta, Indonesia'
+                    name: 'Jakarta, Indonesia',
+                    typingTime: 0
                 };
-                helpText = '📍 <code>latitude</code> & <code>longitude</code>: GPS coordinates in decimal format';
+                helpText = '📍 GPS coordinates. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-contact')) {
                 body = { 
                     sessionId: '', 
                     chatId: '628123456789', 
                     contactName: 'John Doe',
-                    contactPhone: '628987654321'
+                    contactPhone: '628987654321',
+                    typingTime: 0
                 };
-                helpText = '👤 <code>contactPhone</code>: Phone number of the contact to share';
+                helpText = '👤 <code>contactPhone</code>: Contact phone number. <code>typingTime</code>: Typing duration in ms.';
             } else if (path.includes('/chats/send-button')) {
                 body = { 
                     sessionId: '', 
                     chatId: '628123456789', 
                     text: 'Please choose an option:',
                     footer: 'Powered by Chatery',
-                    buttons: ['Option 1', 'Option 2', 'Option 3']
+                    buttons: ['Option 1', 'Option 2', 'Option 3'],
+                    typingTime: 0
                 };
-                helpText = '🔘 <code>buttons</code>: Array of button labels (max 3 buttons). Note: Button messages may have limited support.';
+                helpText = '🔘 <code>buttons</code>: Max 3 buttons. <code>typingTime</code>: Typing duration in ms.';
+            } else if (path.includes('/chats/presence')) {
+                body = { 
+                    sessionId: '', 
+                    chatId: '628123456789',
+                    presence: 'composing'
+                };
+                helpText = '✍️ <code>presence</code>: <code>composing</code> (typing), <code>recording</code> (recording audio), <code>paused</code>, <code>available</code>, <code>unavailable</code>';
             } else if (path.includes('/chats/check-number')) {
                 body = { 
                     sessionId: '', 

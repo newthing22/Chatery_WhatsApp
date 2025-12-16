@@ -487,13 +487,50 @@ class WhatsAppSession {
 
     // ==================== SEND MESSAGES ====================
 
-    async sendTextMessage(chatId, message) {
+    /**
+     * Send presence update (typing indicator)
+     * @param {string} chatId - Chat ID
+     * @param {string} presence - 'composing' | 'recording' | 'paused'
+     */
+    async sendPresenceUpdate(chatId, presence = 'composing') {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
             const jid = this.formatChatId(chatId);
+            await this.socket.sendPresenceUpdate(presence, jid);
+            
+            return { success: true, message: `Presence '${presence}' sent` };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Helper: Send typing indicator and wait
+     * @param {string} jid - Formatted JID
+     * @param {number} typingTime - Time in milliseconds to show typing
+     */
+    async _simulateTyping(jid, typingTime = 0) {
+        if (typingTime > 0) {
+            await this.socket.sendPresenceUpdate('composing', jid);
+            await new Promise(resolve => setTimeout(resolve, typingTime));
+            await this.socket.sendPresenceUpdate('paused', jid);
+        }
+    }
+
+    async sendTextMessage(chatId, message, typingTime = 0) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
             const result = await this.socket.sendMessage(jid, { text: message });
             
             return { 
@@ -510,13 +547,17 @@ class WhatsAppSession {
         }
     }
 
-    async sendImage(chatId, imageUrl, caption = '') {
+    async sendImage(chatId, imageUrl, caption = '', typingTime = 0) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
             const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
             const result = await this.socket.sendMessage(jid, {
                 image: { url: imageUrl },
                 caption: caption
@@ -536,13 +577,17 @@ class WhatsAppSession {
         }
     }
 
-    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf') {
+    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', typingTime = 0) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
             const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
             const result = await this.socket.sendMessage(jid, {
                 document: { url: documentUrl },
                 fileName: filename,
@@ -563,13 +608,17 @@ class WhatsAppSession {
         }
     }
 
-    async sendLocation(chatId, latitude, longitude, name = '') {
+    async sendLocation(chatId, latitude, longitude, name = '', typingTime = 0) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
             const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
             const result = await this.socket.sendMessage(jid, {
                 location: {
                     degreesLatitude: latitude,
@@ -592,13 +641,17 @@ class WhatsAppSession {
         }
     }
 
-    async sendContact(chatId, contactName, contactPhone) {
+    async sendContact(chatId, contactName, contactPhone, typingTime = 0) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
             const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
             const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${contactName}\nTEL;type=CELL;type=VOICE;waid=${contactPhone}:+${contactPhone}\nEND:VCARD`;
             
             const result = await this.socket.sendMessage(jid, {
@@ -622,13 +675,17 @@ class WhatsAppSession {
         }
     }
 
-    async sendButton(chatId, text, footer, buttons) {
+    async sendButton(chatId, text, footer, buttons, typingTime = 0) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
             }
 
             const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
             const result = await this.socket.sendMessage(jid, {
                 text: text,
                 footer: footer,
