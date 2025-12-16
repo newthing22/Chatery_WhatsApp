@@ -23,7 +23,10 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
+  - [Standard Installation](#option-1-standard-installation)
+  - [Docker Installation](#option-2-docker-installation)
 - [Configuration](#-configuration)
+- [API Key Authentication](#-api-key-authentication)
 - [Quick Start](#-quick-start)
 - [Dashboard](#-dashboard)
 - [API Documentation](#-api-documentation)
@@ -35,6 +38,8 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - [Examples](#-examples)
 
 ## 🛠 Installation
+
+### Option 1: Standard Installation
 
 ```bash
 # Clone the repository
@@ -53,6 +58,46 @@ npm start
 # Or development mode with auto-reload
 npm run dev
 ```
+
+### Option 2: Docker Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/farinchan/chatery_backend.git
+cd chatery_backend
+
+# Create environment file
+cp .env.example .env
+
+# Build and run with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+```
+
+#### Docker Commands
+
+| Command | Description |
+|---------|-------------|
+| `docker-compose up -d` | Start container in background |
+| `docker-compose down` | Stop and remove container |
+| `docker-compose logs -f` | View live logs |
+| `docker-compose restart` | Restart container |
+| `docker-compose build --no-cache` | Rebuild image |
+
+#### Docker Volumes
+
+The following data is persisted across container restarts:
+
+| Volume | Path | Description |
+|--------|------|-------------|
+| `chatery_sessions` | `/app/sessions` | WhatsApp session data |
+| `chatery_media` | `/app/public/media` | Received media files |
+| `chatery_store` | `/app/store` | Message history store |
 
 ## ⚙ Configuration
 
