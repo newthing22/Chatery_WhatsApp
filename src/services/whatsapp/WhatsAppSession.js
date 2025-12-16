@@ -13,18 +13,142 @@ const wsManager = require('../websocket/WebSocketManager');
  * Mengelola satu sesi WhatsApp
  */
 class WhatsAppSession {
-    constructor(sessionId) {
+    constructor(sessionId, options = {}) {
         this.sessionId = sessionId;
         this.socket = null;
         this.qrCode = null;
         this.connectionStatus = 'disconnected';
         this.authFolder = path.join(process.cwd(), 'sessions', sessionId);
         this.storeFile = path.join(this.authFolder, 'store.json');
+        this.configFile = path.join(this.authFolder, 'config.json');
         this.mediaFolder = path.join(process.cwd(), 'public', 'media', sessionId);
         this.phoneNumber = null;
         this.name = null;
         this.store = null;
         this.storeInterval = null;
+        
+        // Custom metadata and webhook
+        this.metadata = options.metadata || {};
+        this.webhooks = options.webhooks || []; // Array of { url, events? }
+        
+        // Load config if exists
+        this._loadConfig();
+    }
+    
+    /**
+     * Load session config from file
+     */
+    _loadConfig() {
+        try {
+            if (fs.existsSync(this.configFile)) {
+                const config = JSON.parse(fs.readFileSync(this.configFile, 'utf8'));
+                this.metadata = config.metadata || this.metadata;
+                this.webhooks = config.webhooks || this.webhooks;
+            }
+        } catch (e) {
+            console.log(`⚠️ [${this.sessionId}] Could not load config:`, e.message);
+        }
+    }
+    
+    /**
+     * Save session config to file
+     */
+    _saveConfig() {
+        try {
+            if (!fs.existsSync(this.authFolder)) {
+                fs.mkdirSync(this.authFolder, { recursive: true });
+            }
+            fs.writeFileSync(this.configFile, JSON.stringify({
+                metadata: this.metadata,
+                webhooks: this.webhooks
+            }, null, 2));
+        } catch (e) {
+            console.log(`⚠️ [${this.sessionId}] Could not save config:`, e.message);
+        }
+    }
+    
+    /**
+     * Update session config
+     */
+    updateConfig(options = {}) {
+        if (options.metadata !== undefined) {
+            this.metadata = { ...this.metadata, ...options.metadata };
+        }
+        if (options.webhooks !== undefined) {
+            this.webhooks = options.webhooks;
+        }
+        this._saveConfig();
+        return this.getInfo();
+    }
+    
+    /**
+     * Add a webhook URL
+     */
+    addWebhook(url, events = ['all']) {
+        // Check if already exists
+        const exists = this.webhooks.find(w => w.url === url);
+        if (exists) {
+            exists.events = events;
+        } else {
+            this.webhooks.push({ url, events });
+        }
+        this._saveConfig();
+        return this.getInfo();
+    }
+    
+    /**
+     * Remove a webhook URL
+     */
+    removeWebhook(url) {
+        this.webhooks = this.webhooks.filter(w => w.url !== url);
+        this._saveConfig();
+        return this.getInfo();
+    }
+    
+    /**
+     * Send webhook notification to all configured webhook URLs
+     */
+    async _sendWebhook(event, data) {
+        if (!this.webhooks || this.webhooks.length === 0) return;
+        
+        const payload = {
+            event,
+            sessionId: this.sessionId,
+            metadata: this.metadata,
+            data,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Send to all webhooks in parallel
+        const promises = this.webhooks.map(async (webhook) => {
+            // Check if event should be sent to this webhook
+            const events = webhook.events || ['all'];
+            if (!events.includes('all') && !events.includes(event)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(webhook.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Webhook-Source': 'chatery-whatsapp-api',
+                        'X-Session-Id': this.sessionId,
+                        'X-Webhook-Event': event
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    console.log(`⚠️ [${this.sessionId}] Webhook to ${webhook.url} failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.log(`⚠️ [${this.sessionId}] Webhook to ${webhook.url} error:`, error.message);
+            }
+        });
+        
+        // Wait for all webhooks to complete (non-blocking)
+        Promise.all(promises).catch(() => {});
     }
 
     // ==================== CONNECTION ====================
@@ -112,6 +236,13 @@ class WhatsAppSession {
                     shouldReconnect
                 });
                 
+                // Send webhook
+                this._sendWebhook('connection.update', {
+                    status: 'disconnected',
+                    reason: lastDisconnect?.error?.message,
+                    shouldReconnect
+                });
+                
                 if (shouldReconnect) {
                     console.log(`🔄 [${this.sessionId}] Reconnecting...`);
                     setTimeout(() => this.connect(), 5000);
@@ -133,6 +264,13 @@ class WhatsAppSession {
                 
                 // Emit connection status to WebSocket
                 wsManager.emitConnectionStatus(this.sessionId, 'connected', {
+                    phoneNumber: this.phoneNumber,
+                    name: this.name
+                });
+                
+                // Send webhook
+                this._sendWebhook('connection.update', {
+                    status: 'connected',
                     phoneNumber: this.phoneNumber,
                     name: this.name
                 });
@@ -160,10 +298,16 @@ class WhatsAppSession {
                 // Emit message to WebSocket
                 const formattedMessage = MessageFormatter.formatMessage(message);
                 wsManager.emitMessage(this.sessionId, formattedMessage);
+                
+                // Send webhook
+                this._sendWebhook('message', formattedMessage);
             } else if (message.key.fromMe && m.type === 'notify') {
                 // Message sent confirmation
                 const formattedMessage = MessageFormatter.formatMessage(message);
                 wsManager.emitMessageSent(this.sessionId, formattedMessage);
+                
+                // Send webhook
+                this._sendWebhook('message.sent', formattedMessage);
             }
         });
 
@@ -242,7 +386,9 @@ class WhatsAppSession {
             phoneNumber: this.phoneNumber,
             name: this.name,
             qrCode: this.qrCode,
-            storeStats: this.store ? this.store.getStats() : null
+            storeStats: this.store ? this.store.getStats() : null,
+            metadata: this.metadata,
+            webhooks: this.webhooks
         };
     }
 

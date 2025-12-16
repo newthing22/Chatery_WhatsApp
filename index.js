@@ -48,8 +48,11 @@ app.get('/', (req, res) => {
         endpoints: {
             sessions: {
                 list: 'GET /api/whatsapp/sessions',
-                connect: 'POST /api/whatsapp/sessions/:sessionId/connect',
+                connect: 'POST /api/whatsapp/sessions/:sessionId/connect { metadata?, webhooks[]? }',
                 status: 'GET /api/whatsapp/sessions/:sessionId/status',
+                updateConfig: 'PATCH /api/whatsapp/sessions/:sessionId/config { metadata?, webhooks[]? }',
+                addWebhook: 'POST /api/whatsapp/sessions/:sessionId/webhooks { url, events[]? }',
+                removeWebhook: 'DELETE /api/whatsapp/sessions/:sessionId/webhooks { url }',
                 qrCode: 'GET /api/whatsapp/sessions/:sessionId/qr',
                 qrImage: 'GET /api/whatsapp/sessions/:sessionId/qr/image',
                 delete: 'DELETE /api/whatsapp/sessions/:sessionId'

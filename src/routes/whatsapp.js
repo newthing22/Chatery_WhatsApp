@@ -29,7 +29,13 @@ router.get('/sessions', (req, res) => {
 router.post('/sessions/:sessionId/connect', async (req, res) => {
     try {
         const { sessionId } = req.params;
-        const result = await whatsappManager.createSession(sessionId);
+        const { metadata, webhooks } = req.body;
+        
+        const options = {};
+        if (metadata) options.metadata = metadata;
+        if (webhooks) options.webhooks = webhooks;
+        
+        const result = await whatsappManager.createSession(sessionId, options);
         
         res.json({
             success: result.success,
@@ -66,7 +72,127 @@ router.get('/sessions/:sessionId/status', (req, res) => {
                 status: info.status,
                 isConnected: info.isConnected,
                 phoneNumber: info.phoneNumber,
-                name: info.name
+                name: info.name,
+                metadata: info.metadata,
+                webhooks: info.webhooks
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Update session config (metadata, webhooks)
+router.patch('/sessions/:sessionId/config', (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { metadata, webhooks } = req.body;
+        
+        const session = whatsappManager.getSession(sessionId);
+        
+        if (!session) {
+            return res.status(404).json({
+                success: false,
+                message: 'Session not found'
+            });
+        }
+        
+        const options = {};
+        if (metadata !== undefined) options.metadata = metadata;
+        if (webhooks !== undefined) options.webhooks = webhooks;
+        
+        const updatedInfo = session.updateConfig(options);
+        
+        res.json({
+            success: true,
+            message: 'Session config updated',
+            data: {
+                sessionId: updatedInfo.sessionId,
+                metadata: updatedInfo.metadata,
+                webhooks: updatedInfo.webhooks
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Add a webhook to session
+router.post('/sessions/:sessionId/webhooks', (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { url, events } = req.body;
+        
+        if (!url) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: url'
+            });
+        }
+        
+        const session = whatsappManager.getSession(sessionId);
+        
+        if (!session) {
+            return res.status(404).json({
+                success: false,
+                message: 'Session not found'
+            });
+        }
+        
+        const updatedInfo = session.addWebhook(url, events || ['all']);
+        
+        res.json({
+            success: true,
+            message: 'Webhook added',
+            data: {
+                sessionId: updatedInfo.sessionId,
+                webhooks: updatedInfo.webhooks
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Remove a webhook from session
+router.delete('/sessions/:sessionId/webhooks', (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { url } = req.body;
+        
+        if (!url) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: url'
+            });
+        }
+        
+        const session = whatsappManager.getSession(sessionId);
+        
+        if (!session) {
+            return res.status(404).json({
+                success: false,
+                message: 'Session not found'
+            });
+        }
+        
+        const updatedInfo = session.removeWebhook(url);
+        
+        res.json({
+            success: true,
+            message: 'Webhook removed',
+            data: {
+                sessionId: updatedInfo.sessionId,
+                webhooks: updatedInfo.webhooks
             }
         });
     } catch (error) {

@@ -762,6 +762,9 @@
                                     <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET /sessions/:sessionId/status - Get session status</option>
                                     <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET /sessions/:sessionId/qr - Get QR code</option>
                                     <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST /sessions/:sessionId/connect - Connect session</option>
+                                    <option value="PATCH|/api/whatsapp/sessions/{sessionId}/config">PATCH /sessions/:sessionId/config - Update config</option>
+                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/webhooks">POST /sessions/:sessionId/webhooks - Add webhook</option>
+                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}/webhooks">DELETE /sessions/:sessionId/webhooks - Remove webhook</option>
                                     <option value="DELETE|/api/whatsapp/sessions/{sessionId}">DELETE /sessions/:sessionId - Delete session</option>
                                 </optgroup>
                                 <optgroup label="Messaging">
@@ -907,6 +910,67 @@
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button class="btn btn-outline" onclick="closeCreateSessionModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="createSession()">Create & Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Webhooks Modal -->
+    <div class="modal-overlay" id="webhooksModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-title">🔗 Manage Webhooks</div>
+            <div class="modal-subtitle" id="webhooksSessionName">Session: -</div>
+            
+            <!-- Add Webhook Form -->
+            <div style="background: var(--card-bg); border-radius: 8px; padding: 16px; margin-bottom: 16px; text-align: left;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label">Webhook URL</label>
+                    <input type="url" class="form-input" id="newWebhookUrl" placeholder="https://your-server.com/webhook">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label">Events (optional - leave empty for all events)</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="message"> message
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="message_ack"> message_ack
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="message_revoke"> message_revoke
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="presence"> presence
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="qr"> qr
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="ready"> ready
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="disconnected"> disconnected
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="group_update"> group_update
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
+                            <input type="checkbox" class="webhook-event" value="group_participants"> group_participants
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addWebhook()" style="width: 100%;">➕ Add Webhook</button>
+            </div>
+
+            <!-- Existing Webhooks List -->
+            <div style="text-align: left;">
+                <label class="form-label">Active Webhooks</label>
+                <div id="webhooksList" style="max-height: 200px; overflow-y: auto;">
+                    <div style="text-align: center; color: var(--text-muted); padding: 16px;">Loading...</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 16px;">
+                <button class="btn btn-outline" onclick="closeWebhooksModal()">Close</button>
             </div>
         </div>
     </div>
@@ -1094,12 +1158,15 @@
                 return;
             }
 
-            container.innerHTML = sessions.map(session => `
+            container.innerHTML = sessions.map(session => {
+                const webhookCount = session.webhooks ? session.webhooks.length : 0;
+                return `
                 <div class="session-item">
                     <div class="session-avatar">${session.name ? session.name[0].toUpperCase() : session.sessionId[0].toUpperCase()}</div>
                     <div class="session-info">
                         <div class="session-name">${session.name || session.sessionId}</div>
                         <div class="session-phone">${session.phoneNumber || session.sessionId}</div>
+                        ${webhookCount > 0 ? `<div class="session-webhooks" style="font-size: 11px; color: #10b981;">🔗 ${webhookCount} webhook${webhookCount > 1 ? 's' : ''}</div>` : ''}
                     </div>
                     <div class="session-status ${session.status}">
                         <div class="status-dot ${session.status === 'connected' ? 'connected' : ''}"></div>
@@ -1116,12 +1183,15 @@
                                 🔄
                             </button>
                         ` : ''}
+                        <button class="btn btn-outline btn-icon" onclick="showWebhooksModal('${session.sessionId}')" title="Manage Webhooks">
+                            🔗
+                        </button>
                         <button class="btn btn-danger btn-icon" onclick="deleteSession('${session.sessionId}')" title="Delete">
                             🗑️
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function updateStats() {
@@ -1325,6 +1395,33 @@
             // Sessions
             if (path.includes('/sessions') && method === 'GET') {
                 showBody = false;
+            } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'POST') {
+                body = { 
+                    url: 'https://your-server.com/webhook',
+                    events: ['message', 'message_ack', 'presence']
+                };
+                helpText = `🔗 Add a webhook URL to receive events.<br>
+                    <code>url</code>: Your webhook endpoint<br>
+                    <code>events</code>: (optional) Array of events to receive. Available events:<br>
+                    <code>qr</code>, <code>ready</code>, <code>authenticated</code>, <code>disconnected</code>, <code>message</code>, <code>message_ack</code>, <code>message_revoke</code>, <code>presence</code>, <code>group_update</code>, <code>group_participants</code>`;
+            } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'DELETE') {
+                body = { 
+                    url: 'https://your-server.com/webhook'
+                };
+                helpText = '🗑️ Remove a webhook by its URL.';
+            } else if (path.includes('/sessions') && path.includes('/config') && method === 'PATCH') {
+                body = { 
+                    metadata: {
+                        appName: 'My App',
+                        userId: 'user123'
+                    },
+                    webhooks: [
+                        { url: 'https://your-server.com/webhook', events: ['message', 'message_ack'] }
+                    ]
+                };
+                helpText = `⚙️ Update session configuration.<br>
+                    <code>metadata</code>: Custom data to associate with session<br>
+                    <code>webhooks</code>: Array of webhook configurations`;
             } else if (path.includes('/sessions') && method === 'DELETE') {
                 showBody = false;
                 helpText = '⚠️ This will delete the session and all associated data including media files.';
@@ -1672,11 +1769,146 @@
             }, 4000);
         }
 
+        // Webhook Management
+        let currentWebhookSessionId = null;
+
+        function showWebhooksModal(sessionId) {
+            currentWebhookSessionId = sessionId;
+            document.getElementById('webhooksSessionName').textContent = `Session: ${sessionId}`;
+            document.getElementById('webhooksModal').classList.add('active');
+            document.getElementById('newWebhookUrl').value = '';
+            document.querySelectorAll('.webhook-event').forEach(cb => cb.checked = false);
+            loadWebhooks(sessionId);
+        }
+
+        function closeWebhooksModal() {
+            document.getElementById('webhooksModal').classList.remove('active');
+            currentWebhookSessionId = null;
+        }
+
+        async function loadWebhooks(sessionId) {
+            const container = document.getElementById('webhooksList');
+            container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;"><div class="spinner"></div></div>';
+            
+            try {
+                const session = sessions.find(s => s.sessionId === sessionId);
+                const webhooks = session?.webhooks || [];
+                
+                if (webhooks.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">No webhooks configured</div>';
+                    return;
+                }
+
+                container.innerHTML = webhooks.map((wh, index) => `
+                    <div style="background: var(--card-bg); border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1; overflow: hidden;">
+                            <div style="font-size: 13px; font-weight: 500; word-break: break-all;">${wh.url}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                ${wh.events && wh.events.length > 0 ? `Events: ${wh.events.join(', ')}` : 'All events'}
+                            </div>
+                        </div>
+                        <button class="btn btn-danger btn-icon" onclick="removeWebhook('${wh.url.replace(/'/g, "\\'")}')" title="Remove" style="margin-left: 8px;">
+                            🗑️
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 16px;">Error loading webhooks</div>';
+                console.error('Error loading webhooks:', error);
+            }
+        }
+
+        async function addWebhook() {
+            const url = document.getElementById('newWebhookUrl').value.trim();
+            
+            if (!url) {
+                showToast('error', 'Please enter a webhook URL');
+                return;
+            }
+
+            try {
+                new URL(url);
+            } catch {
+                showToast('error', 'Please enter a valid URL');
+                return;
+            }
+
+            const events = [];
+            document.querySelectorAll('.webhook-event:checked').forEach(cb => {
+                events.push(cb.value);
+            });
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, events: events.length > 0 ? events : undefined })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('success', 'Webhook added successfully');
+                    document.getElementById('newWebhookUrl').value = '';
+                    document.querySelectorAll('.webhook-event').forEach(cb => cb.checked = false);
+                    
+                    // Update local session data
+                    const session = sessions.find(s => s.sessionId === currentWebhookSessionId);
+                    if (session) {
+                        session.webhooks = result.data?.webhooks || [];
+                    }
+                    
+                    loadWebhooks(currentWebhookSessionId);
+                    renderSessions();
+                } else {
+                    showToast('error', result.error || 'Failed to add webhook');
+                }
+            } catch (error) {
+                showToast('error', 'Failed to add webhook');
+                console.error('Error adding webhook:', error);
+            }
+        }
+
+        async function removeWebhook(url) {
+            if (!confirm(`Remove webhook?\n${url}`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('success', 'Webhook removed successfully');
+                    
+                    // Update local session data
+                    const session = sessions.find(s => s.sessionId === currentWebhookSessionId);
+                    if (session) {
+                        session.webhooks = result.data?.webhooks || [];
+                    }
+                    
+                    loadWebhooks(currentWebhookSessionId);
+                    renderSessions();
+                } else {
+                    showToast('error', result.error || 'Failed to remove webhook');
+                }
+            } catch (error) {
+                showToast('error', 'Failed to remove webhook');
+                console.error('Error removing webhook:', error);
+            }
+        }
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeQrModal();
                 closeCreateSessionModal();
+                closeWebhooksModal();
             }
         });
 

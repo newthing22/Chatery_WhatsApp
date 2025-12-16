@@ -160,6 +160,26 @@ GET /sessions
 POST /sessions/:sessionId/connect
 ```
 
+**Body (Optional):**
+```json
+{
+  "metadata": {
+    "userId": "user123",
+    "plan": "premium",
+    "customField": "any value"
+  },
+  "webhooks": [
+    { "url": "https://your-server.com/webhook", "events": ["all"] },
+    { "url": "https://backup-server.com/webhook", "events": ["message"] }
+  ]
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `metadata` | object | Optional. Custom metadata to store with session |
+| `webhooks` | array | Optional. Array of webhook configs `[{ url, events }]` |
+
 **Response:**
 ```json
 {
@@ -168,8 +188,67 @@ POST /sessions/:sessionId/connect
   "data": {
     "sessionId": "mysession",
     "status": "qr_ready",
-    "qrCode": "data:image/png;base64,..."
+    "qrCode": "data:image/png;base64,...",
+    "metadata": { "userId": "user123" },
+    "webhooks": [
+      { "url": "https://your-server.com/webhook", "events": ["all"] }
+    ]
   }
+}
+```
+
+#### Update Session Config
+```http
+PATCH /sessions/:sessionId/config
+```
+
+**Body:**
+```json
+{
+  "metadata": { "newField": "value" },
+  "webhooks": [
+    { "url": "https://new-webhook.com/endpoint", "events": ["message", "connection.update"] }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Session config updated",
+  "data": {
+    "sessionId": "mysession",
+    "metadata": { "userId": "user123", "newField": "value" },
+    "webhooks": [
+      { "url": "https://new-webhook.com/endpoint", "events": ["message", "connection.update"] }
+    ]
+  }
+}
+```
+
+#### Add Webhook
+```http
+POST /sessions/:sessionId/webhooks
+```
+
+**Body:**
+```json
+{
+  "url": "https://another-server.com/webhook",
+  "events": ["message", "connection.update"]
+}
+```
+
+#### Remove Webhook
+```http
+DELETE /sessions/:sessionId/webhooks
+```
+
+**Body:**
+```json
+{
+  "url": "https://another-server.com/webhook"
 }
 ```
 
@@ -728,6 +807,95 @@ socket.on('connection.update', (data) => {
 ### WebSocket Test Page
 
 Open `http://localhost:3000/ws-test` in your browser for an interactive WebSocket testing interface.
+
+---
+
+## 🪝 Webhooks
+
+You can configure multiple webhook URLs to receive events from your WhatsApp session. Each webhook can subscribe to specific events.
+
+### Setup Multiple Webhooks
+
+Set webhooks when creating or updating a session:
+
+```bash
+# When creating session with multiple webhooks
+curl -X POST http://localhost:3000/api/whatsapp/sessions/mysession/connect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metadata": { "userId": "123" },
+    "webhooks": [
+      { "url": "https://primary-server.com/webhook", "events": ["all"] },
+      { "url": "https://analytics.example.com/webhook", "events": ["message"] },
+      { "url": "https://backup.example.com/webhook", "events": ["connection.update"] }
+    ]
+  }'
+
+# Add a webhook to existing session
+curl -X POST http://localhost:3000/api/whatsapp/sessions/mysession/webhooks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://new-webhook.com/endpoint",
+    "events": ["message", "connection.update"]
+  }'
+
+# Remove a webhook
+curl -X DELETE http://localhost:3000/api/whatsapp/sessions/mysession/webhooks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://new-webhook.com/endpoint"
+  }'
+
+# Update all webhooks
+curl -X PATCH http://localhost:3000/api/whatsapp/sessions/mysession/config \
+  -H "Content-Type: application/json" \
+  -d '{
+    "webhooks": [
+      { "url": "https://only-this-one.com/webhook", "events": ["all"] }
+    ]
+  }'
+```
+
+### Webhook Payload
+
+All configured webhook endpoints will receive POST requests with this format:
+
+```json
+{
+  "event": "message",
+  "sessionId": "mysession",
+  "metadata": {
+    "userId": "123",
+    "customField": "value"
+  },
+  "data": {
+    "id": "ABC123",
+    "from": "628123456789@s.whatsapp.net",
+    "text": "Hello!",
+    "timestamp": 1234567890
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+### Webhook Headers
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `application/json` |
+| `X-Webhook-Source` | `chatery-whatsapp-api` |
+| `X-Session-Id` | Session ID |
+| `X-Webhook-Event` | Event name |
+
+### Available Webhook Events
+
+| Event | Description |
+|-------|-------------|
+| `connection.update` | Connection status changed (connected, disconnected) |
+| `message` | New message received |
+| `message.sent` | Message sent confirmation |
+
+Set `events: ["all"]` to receive all events, or specify individual events per webhook.
 
 ### WebSocket Stats
 

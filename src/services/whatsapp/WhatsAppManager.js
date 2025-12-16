@@ -28,7 +28,8 @@ class WhatsAppManager {
                 const sessionPath = path.join(this.sessionsFolder, sessionId);
                 if (fs.statSync(sessionPath).isDirectory()) {
                     console.log(`🔄 Restoring session: ${sessionId}`);
-                    const session = new WhatsAppSession(sessionId);
+                    // Session will load its own config from file
+                    const session = new WhatsAppSession(sessionId, {});
                     this.sessions.set(sessionId, session);
                     await session.connect();
                 }
@@ -41,9 +42,12 @@ class WhatsAppManager {
     /**
      * Create a new session or reconnect existing
      * @param {string} sessionId - Session identifier
+     * @param {Object} options - Session options
+     * @param {Object} options.metadata - Custom metadata to store with session
+     * @param {Array} options.webhooks - Array of webhook configs [{ url, events }]
      * @returns {Object}
      */
-    async createSession(sessionId) {
+    async createSession(sessionId, options = {}) {
         // Validate session ID
         if (!sessionId || !/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
             return { 
@@ -55,6 +59,12 @@ class WhatsAppManager {
         // Check if session already exists
         if (this.sessions.has(sessionId)) {
             const existingSession = this.sessions.get(sessionId);
+            
+            // Update config if provided
+            if (options.metadata || options.webhooks) {
+                existingSession.updateConfig(options);
+            }
+            
             if (existingSession.connectionStatus === 'connected') {
                 return { 
                     success: false, 
@@ -71,8 +81,9 @@ class WhatsAppManager {
             };
         }
 
-        // Create new session
-        const session = new WhatsAppSession(sessionId);
+        // Create new session with options
+        const session = new WhatsAppSession(sessionId, options);
+        session._saveConfig(); // Save initial config
         this.sessions.set(sessionId, session);
         await session.connect();
 
