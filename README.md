@@ -17,12 +17,14 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - 📥 **Auto-Save Media** - Automatically save incoming media to server
 - 💾 **Persistent Store** - Message history with optimized caching
 - 🔐 **Session Persistence** - Sessions survive server restarts
+- 🎛️ **Admin Dashboard** - Web-based dashboard with real-time monitoring and API tester
 
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
 - [Configuration](#-configuration)
 - [Quick Start](#-quick-start)
+- [Dashboard](#-dashboard)
 - [API Documentation](#-api-documentation)
   - [Sessions](#sessions)
   - [Messaging](#messaging)
@@ -58,6 +60,10 @@ Create a `.env` file in the root directory:
 ```env
 PORT=3000
 CORS_ORIGIN=*
+
+# Dashboard Authentication
+DASHBOARD_USERNAME=admin
+DASHBOARD_PASSWORD=securepassword123
 ```
 
 ## 🚀 Quick Start
@@ -83,6 +89,41 @@ CORS_ORIGIN=*
      -H "Content-Type: application/json" \
      -d '{"sessionId": "mysession", "to": "628123456789", "message": "Hello!"}'
    ```
+
+---
+
+## 🎛️ Dashboard
+
+Access the admin dashboard at `http://localhost:3000/dashboard`
+
+### 🔐 Authentication
+
+Dashboard requires login with username and password configured in `.env` file.
+
+| Field | Default Value |
+|-------|---------------|
+| Username | `admin` |
+| Password | `admin123` |
+
+### ✨ Dashboard Features
+
+| Feature | Description |
+|---------|-------------|
+| 📊 **Real-time Stats** | Monitor total sessions, connected/disconnected status, and WebSocket clients |
+| 📱 **Session Management** | Create, connect, reconnect, and delete WhatsApp sessions |
+| 📷 **QR Code Scanner** | Scan QR codes directly from the dashboard |
+| 📡 **Live Events** | Real-time WebSocket event viewer with filtering |
+| 💬 **Quick Send** | Send messages quickly to any number |
+| 🧪 **API Tester** | Test all 30+ API endpoints with pre-filled templates |
+| 🚪 **Logout** | Secure logout button in header |
+
+### 📸 Screenshots
+
+The dashboard provides a modern dark-themed interface:
+- **Session Cards** - View all sessions with status indicators
+- **QR Modal** - Full-screen QR code for easy scanning
+- **Event Log** - Live scrolling event feed with timestamps
+- **API Tester** - Dropdown with all endpoints and auto-generated request bodies
 
 ---
 
@@ -717,18 +758,20 @@ chatery_backend/
 ├── index.js                 # Application entry point
 ├── package.json
 ├── .env                     # Environment variables
+├── README.md                # Documentation
 ├── public/
-│   ├── media/              # Auto-saved media files
-│   │   └── {sessionId}/
-│   │       └── {chatId}/
-│   └── websocket-test.html # WebSocket test page
-├── sessions/               # Session authentication data
+│   ├── dashboard.html       # Admin dashboard
+│   ├── websocket-test.html  # WebSocket test page
+│   └── media/               # Auto-saved media files
+│       └── {sessionId}/
+│           └── {chatId}/
+├── sessions/                # Session authentication data
 │   └── {sessionId}/
 │       ├── creds.json
 │       └── store.json
 └── src/
     ├── routes/
-    │   └── whatsapp.js     # API routes
+    │   └── whatsapp.js      # API routes
     └── services/
         ├── websocket/
         │   └── WebSocketManager.js
@@ -826,6 +869,18 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 **Fajri Rinaldi Chan**
 
 - GitHub: [@farinchan](https://github.com/farinchan)
+
+---
+
+## 🔗 Quick Links
+
+| Resource | URL |
+|----------|-----|
+| 🎛️ Dashboard | http://localhost:3000/dashboard |
+| 📚 API Base URL | http://localhost:3000/api/whatsapp |
+| 🔌 WebSocket Test | http://localhost:3000/ws-test |
+| 📊 WebSocket Stats | http://localhost:3000/api/websocket/stats |
+| ❤️ Health Check | http://localhost:3000/api/health |
 
 ---
 
