@@ -6,6 +6,7 @@ const qrcode = require('qrcode');
 
 const BaileysStore = require('./BaileysStore');
 const MessageFormatter = require('./MessageFormatter');
+const wsManager = require('../websocket/WebSocketManager');
 
 /**
  * WhatsApp Session Class
@@ -93,6 +94,9 @@ class WhatsAppSession {
                 this.qrCode = await qrcode.toDataURL(qr);
                 this.connectionStatus = 'qr_ready';
                 console.log(`📱 [${this.sessionId}] QR Code generated! Scan dengan WhatsApp Anda.`);
+                
+                // Emit QR code to WebSocket
+                wsManager.emitQRCode(this.sessionId, this.qrCode);
             }
 
             if (connection === 'close') {
@@ -102,11 +106,18 @@ class WhatsAppSession {
                 this.connectionStatus = 'disconnected';
                 this.qrCode = null;
                 
+                // Emit connection status to WebSocket
+                wsManager.emitConnectionStatus(this.sessionId, 'disconnected', {
+                    reason: lastDisconnect?.error?.message,
+                    shouldReconnect
+                });
+                
                 if (shouldReconnect) {
                     console.log(`🔄 [${this.sessionId}] Reconnecting...`);
                     setTimeout(() => this.connect(), 5000);
                 } else {
                     console.log(`🚪 [${this.sessionId}] Logged out.`);
+                    wsManager.emitLoggedOut(this.sessionId);
                     this.deleteAuthFolder();
                 }
             } else if (connection === 'open') {
@@ -119,16 +130,25 @@ class WhatsAppSession {
                     this.name = this.socket.user.name || 'Unknown';
                     console.log(`👤 [${this.sessionId}] Connected as: ${this.name} (${this.phoneNumber})`);
                 }
+                
+                // Emit connection status to WebSocket
+                wsManager.emitConnectionStatus(this.sessionId, 'connected', {
+                    phoneNumber: this.phoneNumber,
+                    name: this.name
+                });
             } else if (connection === 'connecting') {
                 console.log(`🔄 [${this.sessionId}] Connecting to WhatsApp...`);
                 this.connectionStatus = 'connecting';
+                
+                // Emit connection status to WebSocket
+                wsManager.emitConnectionStatus(this.sessionId, 'connecting');
             }
         });
 
         // Save credentials
         this.socket.ev.on('creds.update', saveCreds);
 
-        // Log events
+        // Messages upsert (new messages)
         this.socket.ev.on('messages.upsert', async (m) => {
             const message = m.messages[0];
             if (!message.key.fromMe && m.type === 'notify') {
@@ -136,15 +156,81 @@ class WhatsAppSession {
                 
                 // Auto-save media if present
                 await this._autoSaveMedia(message);
+                
+                // Emit message to WebSocket
+                const formattedMessage = MessageFormatter.formatMessage(message);
+                wsManager.emitMessage(this.sessionId, formattedMessage);
+            } else if (message.key.fromMe && m.type === 'notify') {
+                // Message sent confirmation
+                const formattedMessage = MessageFormatter.formatMessage(message);
+                wsManager.emitMessageSent(this.sessionId, formattedMessage);
             }
         });
 
-        this.socket.ev.on('chats.upsert', (chats) => {
-            console.log(`💬 [${this.sessionId}] Chats updated: ${chats.length} chats`);
+        // Messages update (status: read, delivered, etc)
+        this.socket.ev.on('messages.update', (updates) => {
+            wsManager.emitMessageStatus(this.sessionId, updates);
         });
 
+        // Message reaction
+        this.socket.ev.on('messages.reaction', (reactions) => {
+            wsManager.emitToSession(this.sessionId, 'message.reaction', { reactions });
+        });
+
+        // Chats upsert
+        this.socket.ev.on('chats.upsert', (chats) => {
+            console.log(`💬 [${this.sessionId}] Chats updated: ${chats.length} chats`);
+            wsManager.emitChatsUpsert(this.sessionId, chats);
+        });
+
+        // Chats update
+        this.socket.ev.on('chats.update', (chats) => {
+            wsManager.emitChatUpdate(this.sessionId, chats);
+        });
+
+        // Chats delete
+        this.socket.ev.on('chats.delete', (chatIds) => {
+            wsManager.emitChatDelete(this.sessionId, chatIds);
+        });
+
+        // Contacts upsert
         this.socket.ev.on('contacts.upsert', (contacts) => {
             console.log(`👥 [${this.sessionId}] Contacts updated: ${contacts.length} contacts`);
+            wsManager.emitContactUpdate(this.sessionId, contacts);
+        });
+
+        // Contacts update
+        this.socket.ev.on('contacts.update', (contacts) => {
+            wsManager.emitContactUpdate(this.sessionId, contacts);
+        });
+
+        // Presence update (typing, online, etc)
+        this.socket.ev.on('presence.update', (presence) => {
+            wsManager.emitPresence(this.sessionId, presence);
+        });
+
+        // Group participants update
+        this.socket.ev.on('group-participants.update', (update) => {
+            wsManager.emitGroupParticipants(this.sessionId, update);
+        });
+
+        // Groups update
+        this.socket.ev.on('groups.update', (updates) => {
+            wsManager.emitGroupUpdate(this.sessionId, updates);
+        });
+
+        // Call events
+        this.socket.ev.on('call', (calls) => {
+            wsManager.emitCall(this.sessionId, calls);
+        });
+
+        // Labels (for business accounts)
+        this.socket.ev.on('labels.edit', (label) => {
+            wsManager.emitLabels(this.sessionId, { type: 'edit', label });
+        });
+
+        this.socket.ev.on('labels.association', (association) => {
+            wsManager.emitLabels(this.sessionId, { type: 'association', association });
         });
     }
 
@@ -936,6 +1022,528 @@ class WhatsAppSession {
 
     async fetchMessages(chatId, isGroup = false, limit = 50, cursor = null) {
         return this.getChatMessages(chatId, limit, cursor);
+    }
+
+    // ==================== GROUP MANAGEMENT ====================
+
+    /**
+     * Create a new group
+     * @param {string} name - Group name/subject
+     * @param {Array<string>} participants - Array of phone numbers to add
+     * @returns {Object}
+     */
+    async createGroup(name, participants) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!name || !participants || !Array.isArray(participants) || participants.length === 0) {
+                return { success: false, message: 'Group name and at least one participant are required' };
+            }
+
+            // Format participant JIDs
+            const participantJids = participants.map(p => this.formatPhoneNumber(p));
+
+            const group = await this.socket.groupCreate(name, participantJids);
+
+            return {
+                success: true,
+                message: 'Group created successfully',
+                data: {
+                    groupId: group.id,
+                    groupJid: group.id,
+                    subject: name,
+                    participants: participantJids,
+                    createdAt: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Add participants to a group
+     * @param {string} groupId - Group JID
+     * @param {Array<string>} participants - Array of phone numbers to add
+     * @returns {Object}
+     */
+    async groupAddParticipants(groupId, participants) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !participants || !Array.isArray(participants) || participants.length === 0) {
+                return { success: false, message: 'Group ID and participants are required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const participantJids = participants.map(p => this.formatPhoneNumber(p));
+
+            const result = await this.socket.groupParticipantsUpdate(gid, participantJids, 'add');
+
+            return {
+                success: true,
+                message: 'Participants added successfully',
+                data: {
+                    groupId: gid,
+                    participants: result
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Remove participants from a group
+     * @param {string} groupId - Group JID
+     * @param {Array<string>} participants - Array of phone numbers to remove
+     * @returns {Object}
+     */
+    async groupRemoveParticipants(groupId, participants) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !participants || !Array.isArray(participants) || participants.length === 0) {
+                return { success: false, message: 'Group ID and participants are required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const participantJids = participants.map(p => this.formatPhoneNumber(p));
+
+            const result = await this.socket.groupParticipantsUpdate(gid, participantJids, 'remove');
+
+            return {
+                success: true,
+                message: 'Participants removed successfully',
+                data: {
+                    groupId: gid,
+                    participants: result
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Promote participants to admin
+     * @param {string} groupId - Group JID
+     * @param {Array<string>} participants - Array of phone numbers to promote
+     * @returns {Object}
+     */
+    async groupPromoteParticipants(groupId, participants) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !participants || !Array.isArray(participants) || participants.length === 0) {
+                return { success: false, message: 'Group ID and participants are required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const participantJids = participants.map(p => this.formatPhoneNumber(p));
+
+            const result = await this.socket.groupParticipantsUpdate(gid, participantJids, 'promote');
+
+            return {
+                success: true,
+                message: 'Participants promoted to admin successfully',
+                data: {
+                    groupId: gid,
+                    participants: result
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Demote participants from admin
+     * @param {string} groupId - Group JID
+     * @param {Array<string>} participants - Array of phone numbers to demote
+     * @returns {Object}
+     */
+    async groupDemoteParticipants(groupId, participants) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !participants || !Array.isArray(participants) || participants.length === 0) {
+                return { success: false, message: 'Group ID and participants are required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const participantJids = participants.map(p => this.formatPhoneNumber(p));
+
+            const result = await this.socket.groupParticipantsUpdate(gid, participantJids, 'demote');
+
+            return {
+                success: true,
+                message: 'Participants demoted from admin successfully',
+                data: {
+                    groupId: gid,
+                    participants: result
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Update group subject (name)
+     * @param {string} groupId - Group JID
+     * @param {string} subject - New group name
+     * @returns {Object}
+     */
+    async groupUpdateSubject(groupId, subject) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !subject) {
+                return { success: false, message: 'Group ID and subject are required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            await this.socket.groupUpdateSubject(gid, subject);
+
+            return {
+                success: true,
+                message: 'Group subject updated successfully',
+                data: {
+                    groupId: gid,
+                    subject: subject
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Update group description
+     * @param {string} groupId - Group JID
+     * @param {string} description - New group description
+     * @returns {Object}
+     */
+    async groupUpdateDescription(groupId, description) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId) {
+                return { success: false, message: 'Group ID is required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            await this.socket.groupUpdateDescription(gid, description || '');
+
+            return {
+                success: true,
+                message: 'Group description updated successfully',
+                data: {
+                    groupId: gid,
+                    description: description || ''
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Leave a group
+     * @param {string} groupId - Group JID
+     * @returns {Object}
+     */
+    async groupLeave(groupId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId) {
+                return { success: false, message: 'Group ID is required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            await this.socket.groupLeave(gid);
+
+            return {
+                success: true,
+                message: 'Left group successfully',
+                data: {
+                    groupId: gid
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Join a group using invitation code
+     * @param {string} inviteCode - Group invitation code (from invite link)
+     * @returns {Object}
+     */
+    async groupJoinByInvite(inviteCode) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!inviteCode) {
+                return { success: false, message: 'Invitation code is required' };
+            }
+
+            // Remove URL prefix if present (https://chat.whatsapp.com/...)
+            const code = inviteCode.replace(/^https?:\/\/chat\.whatsapp\.com\//, '');
+
+            const groupId = await this.socket.groupAcceptInvite(code);
+
+            return {
+                success: true,
+                message: 'Joined group successfully',
+                data: {
+                    groupId: groupId,
+                    inviteCode: code
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Get group invitation code
+     * @param {string} groupId - Group JID
+     * @returns {Object}
+     */
+    async groupGetInviteCode(groupId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId) {
+                return { success: false, message: 'Group ID is required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const code = await this.socket.groupInviteCode(gid);
+
+            return {
+                success: true,
+                message: 'Invite code retrieved successfully',
+                data: {
+                    groupId: gid,
+                    inviteCode: code,
+                    inviteLink: `https://chat.whatsapp.com/${code}`
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Revoke group invitation code
+     * @param {string} groupId - Group JID
+     * @returns {Object}
+     */
+    async groupRevokeInvite(groupId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId) {
+                return { success: false, message: 'Group ID is required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const newCode = await this.socket.groupRevokeInvite(gid);
+
+            return {
+                success: true,
+                message: 'Invite code revoked successfully',
+                data: {
+                    groupId: gid,
+                    newInviteCode: newCode,
+                    newInviteLink: `https://chat.whatsapp.com/${newCode}`
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Get group metadata
+     * @param {string} groupId - Group JID
+     * @returns {Object}
+     */
+    async groupGetMetadata(groupId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId) {
+                return { success: false, message: 'Group ID is required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            const metadata = await this.socket.groupMetadata(gid);
+
+            return {
+                success: true,
+                message: 'Group metadata retrieved successfully',
+                data: {
+                    id: metadata.id,
+                    subject: metadata.subject,
+                    subjectOwner: metadata.subjectOwner,
+                    subjectTime: metadata.subjectTime,
+                    description: metadata.desc,
+                    descriptionId: metadata.descId,
+                    restrict: metadata.restrict,
+                    announce: metadata.announce,
+                    size: metadata.size,
+                    participants: metadata.participants?.map(p => ({
+                        id: p.id,
+                        admin: p.admin || null,
+                        isSuperAdmin: p.admin === 'superadmin'
+                    })),
+                    creation: metadata.creation,
+                    owner: metadata.owner
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Get all participating groups metadata
+     * @returns {Object}
+     */
+    async getAllGroups() {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const groups = await this.socket.groupFetchAllParticipating();
+            
+            const groupList = Object.values(groups).map(g => ({
+                id: g.id,
+                subject: g.subject,
+                subjectOwner: g.subjectOwner,
+                subjectTime: g.subjectTime,
+                description: g.desc,
+                restrict: g.restrict,
+                announce: g.announce,
+                size: g.size,
+                participantsCount: g.participants?.length || 0,
+                creation: g.creation,
+                owner: g.owner
+            }));
+
+            return {
+                success: true,
+                message: 'Groups retrieved successfully',
+                data: {
+                    count: groupList.length,
+                    groups: groupList
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Update group settings (who can send messages, who can edit group info)
+     * @param {string} groupId - Group JID
+     * @param {string} setting - 'announcement' (only admins send) or 'not_announcement' (all can send)
+     *                          or 'locked' (only admins edit) or 'unlocked' (all can edit)
+     * @returns {Object}
+     */
+    async groupUpdateSettings(groupId, setting) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !setting) {
+                return { success: false, message: 'Group ID and setting are required' };
+            }
+
+            const validSettings = ['announcement', 'not_announcement', 'locked', 'unlocked'];
+            if (!validSettings.includes(setting)) {
+                return { 
+                    success: false, 
+                    message: `Invalid setting. Use: ${validSettings.join(', ')}` 
+                };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            await this.socket.groupSettingUpdate(gid, setting);
+
+            return {
+                success: true,
+                message: 'Group settings updated successfully',
+                data: {
+                    groupId: gid,
+                    setting: setting
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Update group profile picture
+     * @param {string} groupId - Group JID
+     * @param {string} imageUrl - Image URL
+     * @returns {Object}
+     */
+    async groupUpdateProfilePicture(groupId, imageUrl) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!groupId || !imageUrl) {
+                return { success: false, message: 'Group ID and image URL are required' };
+            }
+
+            const gid = this.formatJid(groupId, true);
+            await this.socket.updateProfilePicture(gid, { url: imageUrl });
+
+            return {
+                success: true,
+                message: 'Group profile picture updated successfully',
+                data: {
+                    groupId: gid
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
     }
 }
 

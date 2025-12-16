@@ -463,4 +463,372 @@ router.post('/chats/info', checkSession, async (req, res) => {
     }
 });
 
+// ==================== GROUP MANAGEMENT ====================
+
+/**
+ * Create a new group
+ * Body: { sessionId, name, participants: ['628xxx', '628yyy'] }
+ */
+router.post('/groups/create', checkSession, async (req, res) => {
+    try {
+        const { name, participants } = req.body;
+        
+        if (!name || !participants) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: name, participants'
+            });
+        }
+        
+        const result = await req.session.createGroup(name, participants);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Get all participating groups
+ * Body: { sessionId }
+ */
+router.post('/groups', checkSession, async (req, res) => {
+    try {
+        const result = await req.session.getAllGroups();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Get group metadata
+ * Body: { sessionId, groupId }
+ */
+router.post('/groups/metadata', checkSession, async (req, res) => {
+    try {
+        const { groupId } = req.body;
+        
+        if (!groupId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: groupId'
+            });
+        }
+        
+        const result = await req.session.groupGetMetadata(groupId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Add participants to a group
+ * Body: { sessionId, groupId, participants: ['628xxx', '628yyy'] }
+ */
+router.post('/groups/participants/add', checkSession, async (req, res) => {
+    try {
+        const { groupId, participants } = req.body;
+        
+        if (!groupId || !participants) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, participants'
+            });
+        }
+        
+        const result = await req.session.groupAddParticipants(groupId, participants);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Remove participants from a group
+ * Body: { sessionId, groupId, participants: ['628xxx', '628yyy'] }
+ */
+router.post('/groups/participants/remove', checkSession, async (req, res) => {
+    try {
+        const { groupId, participants } = req.body;
+        
+        if (!groupId || !participants) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, participants'
+            });
+        }
+        
+        const result = await req.session.groupRemoveParticipants(groupId, participants);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Promote participants to admin
+ * Body: { sessionId, groupId, participants: ['628xxx', '628yyy'] }
+ */
+router.post('/groups/participants/promote', checkSession, async (req, res) => {
+    try {
+        const { groupId, participants } = req.body;
+        
+        if (!groupId || !participants) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, participants'
+            });
+        }
+        
+        const result = await req.session.groupPromoteParticipants(groupId, participants);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Demote participants from admin
+ * Body: { sessionId, groupId, participants: ['628xxx', '628yyy'] }
+ */
+router.post('/groups/participants/demote', checkSession, async (req, res) => {
+    try {
+        const { groupId, participants } = req.body;
+        
+        if (!groupId || !participants) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, participants'
+            });
+        }
+        
+        const result = await req.session.groupDemoteParticipants(groupId, participants);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Update group subject (name)
+ * Body: { sessionId, groupId, subject }
+ */
+router.post('/groups/subject', checkSession, async (req, res) => {
+    try {
+        const { groupId, subject } = req.body;
+        
+        if (!groupId || !subject) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, subject'
+            });
+        }
+        
+        const result = await req.session.groupUpdateSubject(groupId, subject);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Update group description
+ * Body: { sessionId, groupId, description }
+ */
+router.post('/groups/description', checkSession, async (req, res) => {
+    try {
+        const { groupId, description } = req.body;
+        
+        if (!groupId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: groupId'
+            });
+        }
+        
+        const result = await req.session.groupUpdateDescription(groupId, description);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Update group settings
+ * Body: { sessionId, groupId, setting: 'announcement'|'not_announcement'|'locked'|'unlocked' }
+ */
+router.post('/groups/settings', checkSession, async (req, res) => {
+    try {
+        const { groupId, setting } = req.body;
+        
+        if (!groupId || !setting) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, setting'
+            });
+        }
+        
+        const result = await req.session.groupUpdateSettings(groupId, setting);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Update group profile picture
+ * Body: { sessionId, groupId, imageUrl }
+ */
+router.post('/groups/picture', checkSession, async (req, res) => {
+    try {
+        const { groupId, imageUrl } = req.body;
+        
+        if (!groupId || !imageUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: groupId, imageUrl'
+            });
+        }
+        
+        const result = await req.session.groupUpdateProfilePicture(groupId, imageUrl);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Leave a group
+ * Body: { sessionId, groupId }
+ */
+router.post('/groups/leave', checkSession, async (req, res) => {
+    try {
+        const { groupId } = req.body;
+        
+        if (!groupId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: groupId'
+            });
+        }
+        
+        const result = await req.session.groupLeave(groupId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Join a group using invitation code/link
+ * Body: { sessionId, inviteCode } - Can be full URL or just the code
+ */
+router.post('/groups/join', checkSession, async (req, res) => {
+    try {
+        const { inviteCode } = req.body;
+        
+        if (!inviteCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: inviteCode'
+            });
+        }
+        
+        const result = await req.session.groupJoinByInvite(inviteCode);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Get group invitation code/link
+ * Body: { sessionId, groupId }
+ */
+router.post('/groups/invite-code', checkSession, async (req, res) => {
+    try {
+        const { groupId } = req.body;
+        
+        if (!groupId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: groupId'
+            });
+        }
+        
+        const result = await req.session.groupGetInviteCode(groupId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Revoke group invitation code
+ * Body: { sessionId, groupId }
+ */
+router.post('/groups/revoke-invite', checkSession, async (req, res) => {
+    try {
+        const { groupId } = req.body;
+        
+        if (!groupId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: groupId'
+            });
+        }
+        
+        const result = await req.session.groupRevokeInvite(groupId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

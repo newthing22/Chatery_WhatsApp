@@ -1,0 +1,834 @@
+# 🚀 Chatery WhatsApp API
+
+A powerful WhatsApp API backend built with Express.js and Baileys library. Supports multi-session management, real-time WebSocket events, group management, and media handling.
+
+![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)
+![Express.js](https://img.shields.io/badge/Express.js-5.x-blue.svg)
+![Baileys](https://img.shields.io/badge/Baileys-7.x-orange.svg)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-purple.svg)
+![License](https://img.shields.io/badge/License-ISC-yellow.svg)
+
+## ✨ Features
+
+- 📱 **Multi-Session Support** - Manage multiple WhatsApp accounts simultaneously
+- 🔌 **Real-time WebSocket** - Get instant notifications for messages, status updates, and more
+- 👥 **Group Management** - Create, manage, and control WhatsApp groups
+- 📨 **Send Messages** - Text, images, documents, locations, contacts, and buttons
+- 📥 **Auto-Save Media** - Automatically save incoming media to server
+- 💾 **Persistent Store** - Message history with optimized caching
+- 🔐 **Session Persistence** - Sessions survive server restarts
+
+## 📋 Table of Contents
+
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Quick Start](#-quick-start)
+- [API Documentation](#-api-documentation)
+  - [Sessions](#sessions)
+  - [Messaging](#messaging)
+  - [Chat History](#chat-history)
+  - [Group Management](#group-management)
+- [WebSocket Events](#-websocket-events)
+- [Examples](#-examples)
+
+## 🛠 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/farinchan/chatery_backend.git
+cd chatery_backend
+
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env
+
+# Start the server
+npm start
+
+# Or development mode with auto-reload
+npm run dev
+```
+
+## ⚙ Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+PORT=3000
+CORS_ORIGIN=*
+```
+
+## 🚀 Quick Start
+
+1. **Start the server**
+   ```bash
+   npm start
+   ```
+
+2. **Create a session**
+   ```bash
+   curl -X POST http://localhost:3000/api/whatsapp/sessions/mysession/connect
+   ```
+
+3. **Get QR Code** - Open in browser or scan
+   ```
+   http://localhost:3000/api/whatsapp/sessions/mysession/qr/image
+   ```
+
+4. **Send a message**
+   ```bash
+   curl -X POST http://localhost:3000/api/whatsapp/chats/send-text \
+     -H "Content-Type: application/json" \
+     -d '{"sessionId": "mysession", "to": "628123456789", "message": "Hello!"}'
+   ```
+
+---
+
+## 📚 API Documentation
+
+Base URL: `http://localhost:3000/api/whatsapp`
+
+### Sessions
+
+#### List All Sessions
+```http
+GET /sessions
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Sessions retrieved",
+  "data": [
+    {
+      "sessionId": "mysession",
+      "status": "connected",
+      "isConnected": true,
+      "phoneNumber": "628123456789",
+      "name": "John Doe"
+    }
+  ]
+}
+```
+
+#### Create/Connect Session
+```http
+POST /sessions/:sessionId/connect
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Session created",
+  "data": {
+    "sessionId": "mysession",
+    "status": "qr_ready",
+    "qrCode": "data:image/png;base64,..."
+  }
+}
+```
+
+#### Get Session Status
+```http
+GET /sessions/:sessionId/status
+```
+
+#### Get QR Code (JSON)
+```http
+GET /sessions/:sessionId/qr
+```
+
+#### Get QR Code (Image)
+```http
+GET /sessions/:sessionId/qr/image
+```
+Returns a PNG image that can be displayed directly in browser or scanned.
+
+#### Delete Session
+```http
+DELETE /sessions/:sessionId
+```
+
+---
+
+### Messaging
+
+#### Send Text Message
+```http
+POST /chats/send-text
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "to": "628123456789",
+  "message": "Hello, World!"
+}
+```
+
+#### Send Image
+```http
+POST /chats/send-image
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "to": "628123456789",
+  "imageUrl": "https://example.com/image.jpg",
+  "caption": "Check this out!"
+}
+```
+
+#### Send Document
+```http
+POST /chats/send-document
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "to": "628123456789",
+  "documentUrl": "https://example.com/document.pdf",
+  "filename": "document.pdf",
+  "mimetype": "application/pdf"
+}
+```
+
+#### Send Location
+```http
+POST /chats/send-location
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "to": "628123456789",
+  "latitude": -6.2088,
+  "longitude": 106.8456,
+  "name": "Jakarta, Indonesia"
+}
+```
+
+#### Send Contact
+```http
+POST /chats/send-contact
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "to": "628123456789",
+  "contactName": "John Doe",
+  "contactPhone": "628987654321"
+}
+```
+
+#### Send Button Message
+```http
+POST /chats/send-button
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "to": "628123456789",
+  "text": "Please choose an option:",
+  "footer": "Powered by Chatery",
+  "buttons": ["Option 1", "Option 2", "Option 3"]
+}
+```
+
+#### Check Phone Number
+```http
+POST /chats/check-number
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "phone": "628123456789"
+}
+```
+
+#### Get Profile Picture
+```http
+POST /chats/profile-picture
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "phone": "628123456789"
+}
+```
+
+---
+
+### Chat History
+
+#### Get Chats Overview
+```http
+POST /chats/overview
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "limit": 50,
+  "offset": 0,
+  "type": "all"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `limit` | number | Optional. Max results (default: 50) |
+| `offset` | number | Optional. Pagination offset (default: 0) |
+| `type` | string | Optional. Filter: `all`, `personal`, `group` |
+
+#### Get Contacts
+```http
+POST /contacts
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "limit": 100,
+  "offset": 0,
+  "search": "john"
+}
+```
+
+#### Get Chat Messages
+```http
+POST /chats/messages
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789@s.whatsapp.net",
+  "limit": 50,
+  "cursor": null
+}
+```
+
+#### Get Chat Info
+```http
+POST /chats/info
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789@s.whatsapp.net"
+}
+```
+
+---
+
+### Group Management
+
+#### Get All Groups
+```http
+POST /groups
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "count": 5,
+    "groups": [
+      {
+        "id": "123456789@g.us",
+        "subject": "My Group",
+        "participantsCount": 25,
+        "creation": 1609459200
+      }
+    ]
+  }
+}
+```
+
+#### Create Group
+```http
+POST /groups/create
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "name": "My New Group",
+  "participants": ["628123456789", "628987654321"]
+}
+```
+
+#### Get Group Metadata
+```http
+POST /groups/metadata
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123456789@g.us",
+    "subject": "My Group",
+    "description": "Group description",
+    "participants": [
+      { "id": "628123456789@s.whatsapp.net", "admin": "superadmin" },
+      { "id": "628987654321@s.whatsapp.net", "admin": null }
+    ],
+    "size": 25
+  }
+}
+```
+
+#### Add Participants
+```http
+POST /groups/participants/add
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "participants": ["628111222333", "628444555666"]
+}
+```
+
+#### Remove Participants
+```http
+POST /groups/participants/remove
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "participants": ["628111222333"]
+}
+```
+
+#### Promote to Admin
+```http
+POST /groups/participants/promote
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "participants": ["628111222333"]
+}
+```
+
+#### Demote from Admin
+```http
+POST /groups/participants/demote
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "participants": ["628111222333"]
+}
+```
+
+#### Update Group Subject (Name)
+```http
+POST /groups/subject
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "subject": "New Group Name"
+}
+```
+
+#### Update Group Description
+```http
+POST /groups/description
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "description": "This is the new group description"
+}
+```
+
+#### Update Group Settings
+```http
+POST /groups/settings
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "setting": "announcement"
+}
+```
+
+| Setting | Description |
+|---------|-------------|
+| `announcement` | Only admins can send messages |
+| `not_announcement` | All participants can send messages |
+| `locked` | Only admins can edit group info |
+| `unlocked` | All participants can edit group info |
+
+#### Update Group Picture
+```http
+POST /groups/picture
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us",
+  "imageUrl": "https://example.com/group-pic.jpg"
+}
+```
+
+#### Leave Group
+```http
+POST /groups/leave
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us"
+}
+```
+
+#### Join Group via Invite
+```http
+POST /groups/join
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "inviteCode": "https://chat.whatsapp.com/AbCdEfGhIjKlMn"
+}
+```
+
+#### Get Invite Code
+```http
+POST /groups/invite-code
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "groupId": "123456789@g.us",
+    "inviteCode": "AbCdEfGhIjKlMn",
+    "inviteLink": "https://chat.whatsapp.com/AbCdEfGhIjKlMn"
+  }
+}
+```
+
+#### Revoke Invite Code
+```http
+POST /groups/revoke-invite
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "groupId": "123456789@g.us"
+}
+```
+
+---
+
+## 🔌 WebSocket Events
+
+Connect to WebSocket server at `ws://localhost:3000`
+
+### Connection
+
+```javascript
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3000');
+
+// Subscribe to a session
+socket.emit('subscribe', 'mysession');
+
+// Unsubscribe from a session
+socket.emit('unsubscribe', 'mysession');
+```
+
+### Events
+
+| Event | Description | Payload |
+|-------|-------------|---------|
+| `qr` | QR code generated | `{ sessionId, qrCode, timestamp }` |
+| `connection.update` | Connection status changed | `{ sessionId, status, phoneNumber?, name?, timestamp }` |
+| `message` | New message received | `{ sessionId, message, timestamp }` |
+| `message.sent` | Message sent confirmation | `{ sessionId, message, timestamp }` |
+| `message.update` | Message status update (read, delivered) | `{ sessionId, update, timestamp }` |
+| `message.reaction` | Message reaction added | `{ sessionId, reactions, timestamp }` |
+| `message.revoke` | Message deleted/revoked | `{ sessionId, key, participant, timestamp }` |
+| `chat.update` | Chat updated | `{ sessionId, chats, timestamp }` |
+| `chat.upsert` | New chat created | `{ sessionId, chats, timestamp }` |
+| `chat.delete` | Chat deleted | `{ sessionId, chatIds, timestamp }` |
+| `contact.update` | Contact updated | `{ sessionId, contacts, timestamp }` |
+| `presence.update` | Typing, online status | `{ sessionId, presence, timestamp }` |
+| `group.participants` | Group members changed | `{ sessionId, update, timestamp }` |
+| `group.update` | Group info changed | `{ sessionId, update, timestamp }` |
+| `call` | Incoming call | `{ sessionId, call, timestamp }` |
+| `labels` | Labels updated (business) | `{ sessionId, labels, timestamp }` |
+| `logged.out` | Session logged out | `{ sessionId, message, timestamp }` |
+
+### Example: Listen for Messages
+
+```javascript
+const socket = io('http://localhost:3000');
+
+socket.on('connect', () => {
+  console.log('Connected to WebSocket');
+  socket.emit('subscribe', 'mysession');
+});
+
+socket.on('message', (data) => {
+  console.log('New message:', data.message);
+  // {
+  //   sessionId: 'mysession',
+  //   message: {
+  //     id: 'ABC123',
+  //     from: '628123456789@s.whatsapp.net',
+  //     text: 'Hello!',
+  //     timestamp: 1234567890,
+  //     ...
+  //   },
+  //   timestamp: '2024-01-15T10:30:00.000Z'
+  // }
+});
+
+socket.on('qr', (data) => {
+  console.log('Scan QR Code:', data.qrCode);
+});
+
+socket.on('connection.update', (data) => {
+  console.log('Connection status:', data.status);
+  if (data.status === 'connected') {
+    console.log(`Connected as ${data.name} (${data.phoneNumber})`);
+  }
+});
+```
+
+### WebSocket Test Page
+
+Open `http://localhost:3000/ws-test` in your browser for an interactive WebSocket testing interface.
+
+### WebSocket Stats
+
+```http
+GET /api/websocket/stats
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalConnections": 5,
+    "sessionRooms": {
+      "mysession": 2,
+      "othersession": 1
+    }
+  }
+}
+```
+
+---
+
+## 📁 Project Structure
+
+```
+chatery_backend/
+├── index.js                 # Application entry point
+├── package.json
+├── .env                     # Environment variables
+├── public/
+│   ├── media/              # Auto-saved media files
+│   │   └── {sessionId}/
+│   │       └── {chatId}/
+│   └── websocket-test.html # WebSocket test page
+├── sessions/               # Session authentication data
+│   └── {sessionId}/
+│       ├── creds.json
+│       └── store.json
+└── src/
+    ├── routes/
+    │   └── whatsapp.js     # API routes
+    └── services/
+        ├── websocket/
+        │   └── WebSocketManager.js
+        └── whatsapp/
+            ├── index.js
+            ├── WhatsAppManager.js
+            ├── WhatsAppSession.js
+            ├── BaileysStore.js
+            └── MessageFormatter.js
+```
+
+---
+
+## 📝 Examples
+
+### Node.js Client
+
+```javascript
+const axios = require('axios');
+
+const API_URL = 'http://localhost:3000/api/whatsapp';
+
+// Create session
+async function createSession(sessionId) {
+  const response = await axios.post(`${API_URL}/sessions/${sessionId}/connect`);
+  return response.data;
+}
+
+// Send message
+async function sendMessage(sessionId, to, message) {
+  const response = await axios.post(`${API_URL}/chats/send-text`, {
+    sessionId,
+    to,
+    message
+  });
+  return response.data;
+}
+
+// Get all groups
+async function getGroups(sessionId) {
+  const response = await axios.post(`${API_URL}/groups`, { sessionId });
+  return response.data;
+}
+```
+
+### Python Client
+
+```python
+import requests
+
+API_URL = 'http://localhost:3000/api/whatsapp'
+
+# Create session
+def create_session(session_id):
+    response = requests.post(f'{API_URL}/sessions/{session_id}/connect')
+    return response.json()
+
+# Send message
+def send_message(session_id, to, message):
+    response = requests.post(f'{API_URL}/chats/send-text', json={
+        'sessionId': session_id,
+        'to': to,
+        'message': message
+    })
+    return response.json()
+
+# Get all groups
+def get_groups(session_id):
+    response = requests.post(f'{API_URL}/groups', json={
+        'sessionId': session_id
+    })
+    return response.json()
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author
+
+**Fajri Rinaldi Chan**
+
+- GitHub: [@farinchan](https://github.com/farinchan)
+
+---
+
+## ⚠️ Disclaimer
+
+This project is not affiliated with WhatsApp or Meta. Use at your own risk. Make sure to comply with WhatsApp's Terms of Service.

@@ -1,13 +1,25 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Import Routes
 const whatsappRoutes = require('./src/routes/whatsapp');
+
+// Import WebSocket Manager
+const wsManager = require('./src/services/websocket/WebSocketManager');
+
+// Initialize WebSocket
+wsManager.initialize(server, {
+    cors: {
+        origin: process.env.CORS_ORIGIN || '*'
+    }
+});
 
 // Middleware
 app.use(cors());
@@ -16,6 +28,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from public folder (for media access)
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
+
+// Serve WebSocket test page
+app.get('/ws-test', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'websocket-test.html'));
+});
 
 // Routes
 app.get('/', (req, res) => {
@@ -48,6 +65,46 @@ app.get('/', (req, res) => {
                 contacts: 'POST /api/whatsapp/contacts { sessionId, limit?, offset?, search? }',
                 messages: 'POST /api/whatsapp/chats/messages { sessionId, chatId, limit?, cursor? }',
                 info: 'POST /api/whatsapp/chats/info { sessionId, chatId }'
+            },
+            groups: {
+                list: 'POST /api/whatsapp/groups { sessionId }',
+                create: 'POST /api/whatsapp/groups/create { sessionId, name, participants[] }',
+                metadata: 'POST /api/whatsapp/groups/metadata { sessionId, groupId }',
+                addParticipants: 'POST /api/whatsapp/groups/participants/add { sessionId, groupId, participants[] }',
+                removeParticipants: 'POST /api/whatsapp/groups/participants/remove { sessionId, groupId, participants[] }',
+                promoteParticipants: 'POST /api/whatsapp/groups/participants/promote { sessionId, groupId, participants[] }',
+                demoteParticipants: 'POST /api/whatsapp/groups/participants/demote { sessionId, groupId, participants[] }',
+                updateSubject: 'POST /api/whatsapp/groups/subject { sessionId, groupId, subject }',
+                updateDescription: 'POST /api/whatsapp/groups/description { sessionId, groupId, description }',
+                updateSettings: 'POST /api/whatsapp/groups/settings { sessionId, groupId, setting }',
+                updatePicture: 'POST /api/whatsapp/groups/picture { sessionId, groupId, imageUrl }',
+                leave: 'POST /api/whatsapp/groups/leave { sessionId, groupId }',
+                join: 'POST /api/whatsapp/groups/join { sessionId, inviteCode }',
+                getInviteCode: 'POST /api/whatsapp/groups/invite-code { sessionId, groupId }',
+                revokeInvite: 'POST /api/whatsapp/groups/revoke-invite { sessionId, groupId }'
+            },
+            websocket: {
+                info: 'WebSocket connection available at ws://localhost:PORT',
+                events: [
+                    'subscribe(sessionId) - Subscribe to session events',
+                    'unsubscribe(sessionId) - Unsubscribe from session',
+                    'qr - QR code generated',
+                    'connection.update - Connection status changed',
+                    'message - New message received',
+                    'message.sent - Message sent confirmation',
+                    'message.update - Message status update',
+                    'message.revoke - Message deleted/revoked',
+                    'chat.update - Chat updated',
+                    'chat.upsert - New chat created',
+                    'chat.delete - Chat deleted',
+                    'contact.update - Contact updated',
+                    'presence.update - Presence (typing, online)',
+                    'group.participants - Group members update',
+                    'group.update - Group info update',
+                    'call - Incoming call',
+                    'logged.out - Session logged out'
+                ],
+                stats: 'GET /api/websocket/stats'
             }
         }
     });
@@ -58,6 +115,14 @@ app.get('/api/health', (req, res) => {
         success: true,
         message: 'Server is running',
         timestamp: new Date().toISOString()
+    });
+});
+
+// WebSocket Stats
+app.get('/api/websocket/stats', (req, res) => {
+    res.json({
+        success: true,
+        data: wsManager.getStats()
     });
 });
 
@@ -82,7 +147,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Chatery WhatsApp API running on http://localhost:${PORT}`);
+    console.log(`WebSocket server running on ws://localhost:${PORT}`);
     console.log(`API Documentation: http://localhost:${PORT}`);
 });
