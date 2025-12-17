@@ -20,8 +20,20 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - 🔐 **Session Persistence** - Sessions survive server restarts
 - 🎛️ **Admin Dashboard** - Web-based dashboard with real-time monitoring and API tester
 
+## 📖 Full Documentation
+
+For complete and detailed documentation, please visit:
+
+| 🌐 Documentation | Link |
+|------------------|------|
+| **Primary Docs** | [https://docs.chatery.app](https://docs.chatery.app/) |
+| **Mirror Docs** | [https://chatery-whatsapp-documentation.appwrite.network](https://chatery-whatsapp-documentation.appwrite.network) |
+
+> 📚 The documentation includes complete API reference, examples, troubleshooting guides, and more.
+
 ## 📋 Table of Contents
 
+- [Full Documentation](#-full-documentation)
 - [Installation](#-installation)
   - [Standard Installation](#option-1-standard-installation)
   - [Docker Installation](#option-2-docker-installation)
