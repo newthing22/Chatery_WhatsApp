@@ -55,8 +55,8 @@ For complete and detailed documentation, please visit:
 
 ```bash
 # Clone the repository
-git clone https://github.com/farinchan/chatery_backend.git
-cd chatery_backend
+git clone https://github.com/farinchan/chatery_whatsapp.git
+cd chatery_whatsapp
 
 # Install dependencies
 npm install
@@ -75,8 +75,8 @@ npm run dev
 
 ```bash
 # Clone the repository
-git clone https://github.com/farinchan/chatery_backend.git
-cd chatery_backend
+git clone https://github.com/farinchan/chatery_whatsapp.git
+cd chatery_whatsapp
 
 # Create environment file
 cp .env.example .env
