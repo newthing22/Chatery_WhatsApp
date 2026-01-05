@@ -365,6 +365,15 @@ class BaileysStore {
   }
 
   /**
+   * Get a specific message by ID from a chat
+   */
+  getMessage(chatId, messageId) {
+    const chatMessages = this.messages.get(chatId);
+    if (!chatMessages) return null;
+    return chatMessages.get(messageId) || null;
+  }
+
+  /**
    * Get a specific contact
    */
   getContact(jid) {

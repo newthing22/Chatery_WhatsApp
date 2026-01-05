@@ -531,19 +531,29 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const messageOptions = { text: message };
+            const messageContent = { text: message };
+            const messageOptions = {};
             
             // Add quoted message for reply
             if (replyTo) {
-                messageOptions.quoted = {
-                    key: {
-                        remoteJid: jid,
-                        id: replyTo
-                    }
-                };
+                // Try to get the message from store first
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    // Fallback: create minimal quoted structure
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
             }
             
-            const result = await this.socket.sendMessage(jid, messageOptions);
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
             
             return { 
                 success: true, 
@@ -570,22 +580,30 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const messageOptions = {
+            const messageContent = {
                 image: { url: imageUrl },
                 caption: caption
             };
+            const messageOptions = {};
             
             // Add quoted message for reply
             if (replyTo) {
-                messageOptions.quoted = {
-                    key: {
-                        remoteJid: jid,
-                        id: replyTo
-                    }
-                };
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
             }
             
-            const result = await this.socket.sendMessage(jid, messageOptions);
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
 
             return {
                 success: true,
@@ -612,23 +630,31 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const messageOptions = {
+            const messageContent = {
                 document: { url: documentUrl },
                 fileName: filename,
                 mimetype: mimetype
             };
+            const messageOptions = {};
             
             // Add quoted message for reply
             if (replyTo) {
-                messageOptions.quoted = {
-                    key: {
-                        remoteJid: jid,
-                        id: replyTo
-                    }
-                };
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
             }
             
-            const result = await this.socket.sendMessage(jid, messageOptions);
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
 
             return {
                 success: true,
@@ -655,25 +681,33 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const messageOptions = {
+            const messageContent = {
                 location: {
                     degreesLatitude: latitude,
                     degreesLongitude: longitude,
                     name: name
                 }
             };
+            const messageOptions = {};
             
             // Add quoted message for reply
             if (replyTo) {
-                messageOptions.quoted = {
-                    key: {
-                        remoteJid: jid,
-                        id: replyTo
-                    }
-                };
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
             }
             
-            const result = await this.socket.sendMessage(jid, messageOptions);
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
 
             return {
                 success: true,
@@ -702,24 +736,32 @@ class WhatsAppSession {
             
             const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${contactName}\nTEL;type=CELL;type=VOICE;waid=${contactPhone}:+${contactPhone}\nEND:VCARD`;
             
-            const messageOptions = {
+            const messageContent = {
                 contacts: {
                     displayName: contactName,
                     contacts: [{ vcard }]
                 }
             };
+            const messageOptions = {};
             
             // Add quoted message for reply
             if (replyTo) {
-                messageOptions.quoted = {
-                    key: {
-                        remoteJid: jid,
-                        id: replyTo
-                    }
-                };
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
             }
             
-            const result = await this.socket.sendMessage(jid, messageOptions);
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
 
             return {
                 success: true,
@@ -746,7 +788,7 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const messageOptions = {
+            const messageContent = {
                 text: text,
                 footer: footer,
                 buttons: buttons.map((btn, idx) => ({
@@ -756,18 +798,26 @@ class WhatsAppSession {
                 })),
                 headerType: 1
             };
+            const messageOptions = {};
             
             // Add quoted message for reply
             if (replyTo) {
-                messageOptions.quoted = {
-                    key: {
-                        remoteJid: jid,
-                        id: replyTo
-                    }
-                };
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
             }
             
-            const result = await this.socket.sendMessage(jid, messageOptions);
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
 
             return {
                 success: true,
