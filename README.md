@@ -14,8 +14,9 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - 📱 **Multi-Session Support** - Manage multiple WhatsApp accounts simultaneously
 - 🔌 **Real-time WebSocket** - Get instant notifications for messages, status updates, and more
 - 👥 **Group Management** - Create, manage, and control WhatsApp groups
-- 📨 **Send Messages** - Text, images, documents, locations, contacts, and buttons
+- 📨 **Send Messages** - Text, images, documents, locations, contacts, and more
 - ↩️ **Reply to Messages** - Reply/quote specific messages with replyTo parameter
+- 📊 **Poll Messages** - Send interactive polls with single or multiple choice
 - 📤 **Bulk Messaging** - Send messages to multiple recipients with background processing
 - 📥 **Auto-Save Media** - Automatically save incoming media to server
 - 💾 **Persistent Store** - Message history with optimized caching
@@ -523,10 +524,40 @@ POST /chats/send-contact
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
 
-#### Send Button Message
+#### Send Poll Message
+```http
+POST /chats/send-poll
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "question": "What is your favorite color?",
+  "options": ["Red", "Blue", "Green", "Yellow"],
+  "selectableCount": 1,
+  "typingTime": 2000,
+  "replyTo": null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `question` | string | Required. Poll question |
+| `options` | array | Required. Array of options (2-12 items) |
+| `selectableCount` | number | Optional. Number of selectable options (default: 1) |
+| `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
+
+#### Send Button Message (DEPRECATED)
 ```http
 POST /chats/send-button
 ```
+
+> ⚠️ **Note:** WhatsApp deprecated button messages in 2022. This endpoint now uses **Poll** as an alternative. For actual interactive buttons, you need WhatsApp Business API (Cloud API).
 
 **Body:**
 ```json
@@ -545,9 +576,9 @@ POST /chats/send-button
 |-----------|------|-------------|
 | `sessionId` | string | Required. Session ID |
 | `chatId` | string | Required. Phone number or group ID |
-| `text` | string | Required. Button message text |
-| `footer` | string | Optional. Footer text |
-| `buttons` | array | Required. Array of button labels (max 3) |
+| `text` | string | Required. Poll question (combined with footer) |
+| `footer` | string | Optional. Additional text |
+| `buttons` | array | Required. Array of options (poll choices) |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
 

@@ -442,7 +442,7 @@ router.post('/chats/send-contact', checkSession, async (req, res) => {
     }
 });
 
-// Send button message
+// Send button message (uses Poll as buttons are deprecated by WhatsApp)
 router.post('/chats/send-button', checkSession, async (req, res) => {
     try {
         const { chatId, text, footer, buttons, typingTime = 0, replyTo = null } = req.body;
@@ -455,6 +455,35 @@ router.post('/chats/send-button', checkSession, async (req, res) => {
         }
 
         const result = await req.session.sendButton(chatId, text, footer || '', buttons, typingTime, replyTo);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Send poll message (alternative to buttons)
+router.post('/chats/send-poll', checkSession, async (req, res) => {
+    try {
+        const { chatId, question, options, selectableCount = 1, typingTime = 0, replyTo = null } = req.body;
+        
+        if (!chatId || !question || !options || !Array.isArray(options)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, question, options (array)'
+            });
+        }
+
+        if (options.length < 2 || options.length > 12) {
+            return res.status(400).json({
+                success: false,
+                message: 'Poll must have between 2 and 12 options'
+            });
+        }
+
+        const result = await req.session.sendPoll(chatId, question, options, selectableCount, typingTime, replyTo);
         res.json(result);
     } catch (error) {
         res.status(500).json({

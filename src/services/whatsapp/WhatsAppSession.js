@@ -777,6 +777,12 @@ class WhatsAppSession {
         }
     }
 
+    /**
+     * Send Button Message
+     * NOTE: Regular button messages are DEPRECATED by WhatsApp since 2022.
+     * This method now uses Poll as an alternative for interactive choices.
+     * If you need actual buttons, you must use WhatsApp Business API (Cloud API).
+     */
     async sendButton(chatId, text, footer, buttons, typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
@@ -788,15 +794,16 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
+            // WhatsApp deprecated regular buttons in 2022
+            // Using Poll as an alternative for interactive choices
+            const pollName = footer ? `${text}\n\n${footer}` : text;
+            
             const messageContent = {
-                text: text,
-                footer: footer,
-                buttons: buttons.map((btn, idx) => ({
-                    buttonId: `btn_${idx}`,
-                    buttonText: { displayText: btn },
-                    type: 1
-                })),
-                headerType: 1
+                poll: {
+                    name: pollName,
+                    values: buttons, // Poll options as choices
+                    selectableCount: 1 // Single selection like a button
+                }
             };
             const messageOptions = {};
             
@@ -821,7 +828,65 @@ class WhatsAppSession {
 
             return {
                 success: true,
-                message: 'Button message sent successfully',
+                message: 'Interactive poll sent (buttons are deprecated by WhatsApp)',
+                data: {
+                    messageId: result.key.id,
+                    chatId: jid,
+                    timestamp: new Date().toISOString(),
+                    note: 'WhatsApp deprecated button messages in 2022. Poll is used as alternative.'
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Send Poll Message
+     * A working alternative for interactive choices
+     */
+    async sendPoll(chatId, question, options, selectableCount = 1, typingTime = 0, replyTo = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            
+            // Simulate typing if typingTime > 0
+            await this._simulateTyping(jid, typingTime);
+            
+            const messageContent = {
+                poll: {
+                    name: question,
+                    values: options,
+                    selectableCount: selectableCount
+                }
+            };
+            const messageOptions = {};
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
+
+            return {
+                success: true,
+                message: 'Poll sent successfully',
                 data: {
                     messageId: result.key.id,
                     chatId: jid,
