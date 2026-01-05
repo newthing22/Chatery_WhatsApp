@@ -901,7 +901,9 @@
                                     <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact -
                                         Send contact</option>
                                     <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send
-                                        button message</option>
+                                        button (uses Poll)</option>
+                                    <option value="POST|/api/whatsapp/chats/send-poll">POST /chats/send-poll - Send
+                                        poll message</option>
                                     <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing
                                         indicator</option>
                                     <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number -
@@ -1779,6 +1781,17 @@
                     replyTo: null
                 };
                 helpText = '👤 <code>contactPhone</code>: Contact phone number. <code>replyTo</code>: Message ID to reply to (optional).';
+            } else if (path.includes('/chats/send-poll')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    question: 'What is your favorite color?',
+                    options: ['Red', 'Blue', 'Green', 'Yellow'],
+                    selectableCount: 1,
+                    typingTime: 0,
+                    replyTo: null
+                };
+                helpText = '📊 <code>options</code>: 2-12 choices. <code>selectableCount</code>: 1 for single choice, more for multiple. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/send-button')) {
                 body = {
                     sessionId: '',
@@ -1789,7 +1802,7 @@
                     typingTime: 0,
                     replyTo: null
                 };
-                helpText = '🔘 <code>buttons</code>: Max 3 buttons. <code>replyTo</code>: Message ID to reply to (optional).';
+                helpText = '⚠️ <b>DEPRECATED:</b> Buttons deprecated by WhatsApp. This now sends a Poll instead. Use <code>/send-poll</code> for better control.';
             } else if (path.includes('/chats/presence')) {
                 body = {
                     sessionId: '',

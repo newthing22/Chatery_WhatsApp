@@ -504,8 +504,13 @@
  * /api/whatsapp/chats/send-button:
  *   post:
  *     tags: [Messaging]
- *     summary: Send button message
- *     description: Send a message with interactive buttons. Optionally reply to a specific message.
+ *     summary: Send button message (DEPRECATED - uses Poll)
+ *     description: |
+ *       **Note:** WhatsApp deprecated button messages in 2022.
+ *       This endpoint now uses Poll as an alternative for interactive choices.
+ *       The buttons will be displayed as poll options.
+ *       
+ *       For actual button messages, you need WhatsApp Business API (Cloud API).
  *     requestBody:
  *       required: true
  *       content:
@@ -526,12 +531,8 @@
  *               buttons:
  *                 type: array
  *                 items:
- *                   type: object
- *                   properties:
- *                     buttonId:
- *                       type: string
- *                     buttonText:
- *                       type: string
+ *                   type: string
+ *                 example: ["Option 1", "Option 2", "Option 3"]
  *               typingTime:
  *                 type: integer
  *               replyTo:
@@ -540,7 +541,56 @@
  *                 description: Message ID to reply to (optional)
  *     responses:
  *       200:
- *         description: Button message sent
+ *         description: Poll sent (as button alternative)
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/send-poll:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Send poll message
+ *     description: |
+ *       Send a poll message with multiple options.
+ *       This is the recommended alternative to deprecated button messages.
+ *       
+ *       - Supports 2-12 options
+ *       - selectableCount controls single (1) or multiple choice
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId, question, options]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               question:
+ *                 type: string
+ *                 example: What is your favorite color?
+ *               options:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 minItems: 2
+ *                 maxItems: 12
+ *                 example: ["Red", "Blue", "Green", "Yellow"]
+ *               selectableCount:
+ *                 type: integer
+ *                 default: 1
+ *                 description: Number of options that can be selected (1 for single choice)
+ *               typingTime:
+ *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *                 description: Message ID to reply to (optional)
+ *     responses:
+ *       200:
+ *         description: Poll sent successfully
  */
 
 /**
