@@ -1685,6 +1685,52 @@
  * @swagger
  * components:
  *   schemas:
+ *     Session:
+ *       type: object
+ *       description: WhatsApp session information
+ *       properties:
+ *         sessionId:
+ *           type: string
+ *           description: Unique session identifier
+ *           example: mysession
+ *         status:
+ *           type: string
+ *           enum: [disconnected, connecting, qr_ready, connected]
+ *           description: Current session status
+ *           example: connected
+ *         isConnected:
+ *           type: boolean
+ *           description: Whether session is currently connected
+ *           example: true
+ *         phoneNumber:
+ *           type: string
+ *           description: Connected WhatsApp phone number
+ *           example: "628123456789"
+ *         name:
+ *           type: string
+ *           description: WhatsApp profile name
+ *           example: John Doe
+ *         webhooks:
+ *           type: array
+ *           description: Configured webhooks for this session
+ *           items:
+ *             type: object
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: Webhook URL
+ *                 example: https://example.com/webhook
+ *               events:
+ *                 type: array
+ *                 description: Events to receive (empty = all events)
+ *                 items:
+ *                   type: string
+ *                 example: [message, message_ack]
+ *         metadata:
+ *           type: object
+ *           description: Custom metadata associated with this session
+ *           example: {"appName": "MyApp", "userId": "123"}
+ *
  *     WebSocketEvent:
  *       type: object
  *       description: WebSocket event payload structure

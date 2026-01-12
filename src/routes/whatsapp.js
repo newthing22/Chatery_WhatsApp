@@ -14,7 +14,9 @@ router.get('/sessions', (req, res) => {
                 status: s.status,
                 isConnected: s.isConnected,
                 phoneNumber: s.phoneNumber,
-                name: s.name
+                name: s.name,
+                webhooks: s.webhooks || [],
+                metadata: s.metadata || {}
             }))
         });
     } catch (error) {
