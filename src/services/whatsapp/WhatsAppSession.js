@@ -1492,35 +1492,51 @@ class WhatsAppSession {
             }
 
             const jid = this.formatChatId(chatId);
+            const isGroup = this.isGroupId(jid);
 
-            // If specific message ID provided, use it
-            if (messageId) {
-                await this.socket.readMessages([{
-                    remoteJid: jid,
-                    id: messageId,
-                    participant: this.isGroupId(jid) ? undefined : undefined
-                }]);
-            } else {
-                // Mark all messages in chat as read using chatModify
-                await this.socket.chatModify(
-                    { markRead: true, lastMessages: [] },
-                    jid
-                );
+            console.log(`[${this.sessionId}] markChatRead: jid=${jid}, isGroup=${isGroup}`);
+
+            // Get messages from store
+            const storeMessages = this.store?.getMessages(jid, { limit: 50 }) || [];
+            console.log(`[${this.sessionId}] Found ${storeMessages.length} messages in store for ${jid}`);
+            
+            // Collect message keys to mark as read
+            const keysToRead = [];
+            for (const msg of storeMessages) {
+                // Only mark incoming messages (not from me)
+                if (msg?.key && !msg.key.fromMe && msg.key.id) {
+                    const readKey = {
+                        remoteJid: jid,
+                        id: msg.key.id
+                    };
+                    // Add participant for group messages
+                    if (isGroup && msg.key.participant) {
+                        readKey.participant = msg.key.participant;
+                    }
+                    keysToRead.push(readKey);
+                }
             }
-
-            console.log(`✅ [${this.sessionId}] Chat marked as read: ${jid}`);
+            
+            if (keysToRead.length > 0) {
+                console.log(`[${this.sessionId}] Marking ${keysToRead.length} messages as read`);
+                await this.socket.readMessages(keysToRead);
+                console.log(`✅ [${this.sessionId}] Messages marked as read: ${jid}`);
+            } else {
+                console.log(`[${this.sessionId}] No unread messages found in store for ${jid}`);
+            }
 
             return {
                 success: true,
                 message: 'Chat marked as read',
                 data: {
                     chatId: jid,
-                    messageId: messageId || null
+                    isGroup: isGroup,
+                    markedCount: keysToRead.length
                 }
             };
         } catch (error) {
-            console.error(`[${this.sessionId}] Mark read error:`, error.message);
-            return { success: false, message: error.message };
+            console.error(`[${this.sessionId}] Mark read error:`, error);
+            return { success: false, message: error.message || 'Failed to mark as read' };
         }
     }
 

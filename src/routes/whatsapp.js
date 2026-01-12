@@ -1106,12 +1106,15 @@ router.post('/chats/mark-read', checkSession, async (req, res) => {
             });
         }
         
-        const result = await req.session.markChatRead(chatId, messageId);
+        console.log(`[mark-read] chatId: ${chatId}, messageId: ${messageId || 'all'}`);
+        
+        const result = await req.session.markChatRead(chatId, messageId || null);
         res.json(result);
     } catch (error) {
+        console.error('[mark-read] Error:', error);
         res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || 'Internal Server Error'
         });
     }
 });

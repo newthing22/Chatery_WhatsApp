@@ -1104,7 +1104,11 @@
  *   post:
  *     tags: [Chat History]
  *     summary: Mark chat as read
- *     description: Mark all messages in a chat as read
+ *     description: |
+ *       Mark all unread messages in a chat as read. Works for both private chats and group chats.
+ *       
+ *       **Note:** Only messages that were received after the server started can be marked as read
+ *       (messages must be in the in-memory store).
  *     requestBody:
  *       required: true
  *       content:
@@ -1115,14 +1119,38 @@
  *             properties:
  *               sessionId:
  *                 type: string
+ *                 example: mysession
  *               chatId:
  *                 type: string
- *               messageId:
- *                 type: string
- *                 description: Specific message to mark as read
+ *                 description: Chat ID (phone number or group ID)
+ *                 example: "628123456789"
  *     responses:
  *       200:
  *         description: Chat marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Chat marked as read
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatId:
+ *                       type: string
+ *                       example: "628123456789@s.whatsapp.net"
+ *                     isGroup:
+ *                       type: boolean
+ *                       example: false
+ *                     markedCount:
+ *                       type: integer
+ *                       description: Number of messages marked as read
+ *                       example: 5
  */
 
 /**

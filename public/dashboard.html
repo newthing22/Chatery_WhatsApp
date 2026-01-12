@@ -1938,10 +1938,9 @@
             } else if (path.includes('/chats/mark-read')) {
                 body = {
                     sessionId: '',
-                    chatId: '628123456789',
-                    messageId: null
+                    chatId: '628123456789'
                 };
-                helpText = '✅ Mark a chat as read. <code>messageId</code>: (optional) Specific message ID to mark as read.';
+                helpText = '✅ Mark all unread messages in a chat as read. Works for both personal and group chats.<br><code>chatId</code>: Phone number or group ID.<br>⚠️ Note: Only messages received after server start can be marked as read.';
             }
             // Groups - Basic
             else if (path === 'POST|/api/whatsapp/groups' || path.endsWith('/groups')) {
