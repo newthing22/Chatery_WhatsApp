@@ -288,93 +288,174 @@ class WhatsAppSession {
 
         // Messages upsert (new messages)
         this.socket.ev.on('messages.upsert', async (m) => {
-            const message = m.messages[0];
-            if (!message.key.fromMe && m.type === 'notify') {
-                console.log(`📩 [${this.sessionId}] New message from:`, message.key.remoteJid);
+            try {
+                // Validate messages array
+                if (!m?.messages || !Array.isArray(m.messages) || m.messages.length === 0) {
+                    return;
+                }
                 
-                // Auto-save media if present
-                await this._autoSaveMedia(message);
+                const message = m.messages[0];
                 
-                // Emit message to WebSocket
-                const formattedMessage = MessageFormatter.formatMessage(message);
-                wsManager.emitMessage(this.sessionId, formattedMessage);
+                // Validate message structure
+                if (!message || !message.key || !message.key.remoteJid) {
+                    console.log(`⚠️ [${this.sessionId}] Received invalid message structure, skipping`);
+                    return;
+                }
                 
-                // Send webhook
-                this._sendWebhook('message', formattedMessage);
-            } else if (message.key.fromMe && m.type === 'notify') {
-                // Message sent confirmation
-                const formattedMessage = MessageFormatter.formatMessage(message);
-                wsManager.emitMessageSent(this.sessionId, formattedMessage);
-                
-                // Send webhook
-                this._sendWebhook('message.sent', formattedMessage);
+                if (!message.key.fromMe && m.type === 'notify') {
+                    console.log(`📩 [${this.sessionId}] New message from:`, message.key.remoteJid);
+                    
+                    // Auto-save media if present
+                    await this._autoSaveMedia(message);
+                    
+                    // Emit message to WebSocket
+                    const formattedMessage = MessageFormatter.formatMessage(message);
+                    wsManager.emitMessage(this.sessionId, formattedMessage);
+                    
+                    // Send webhook
+                    this._sendWebhook('message', formattedMessage);
+                } else if (message.key.fromMe && m.type === 'notify') {
+                    // Message sent confirmation
+                    const formattedMessage = MessageFormatter.formatMessage(message);
+                    wsManager.emitMessageSent(this.sessionId, formattedMessage);
+                    
+                    // Send webhook
+                    this._sendWebhook('message.sent', formattedMessage);
+                }
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing message upsert:`, error.message);
             }
         });
 
         // Messages update (status: read, delivered, etc)
         this.socket.ev.on('messages.update', (updates) => {
-            wsManager.emitMessageStatus(this.sessionId, updates);
+            try {
+                if (!updates || !Array.isArray(updates)) return;
+                wsManager.emitMessageStatus(this.sessionId, updates);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing messages.update:`, error.message);
+            }
         });
 
         // Message reaction
         this.socket.ev.on('messages.reaction', (reactions) => {
-            wsManager.emitToSession(this.sessionId, 'message.reaction', { reactions });
+            try {
+                if (!reactions) return;
+                wsManager.emitToSession(this.sessionId, 'message.reaction', { reactions });
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing messages.reaction:`, error.message);
+            }
         });
 
         // Chats upsert
         this.socket.ev.on('chats.upsert', (chats) => {
-            console.log(`💬 [${this.sessionId}] Chats updated: ${chats.length} chats`);
-            wsManager.emitChatsUpsert(this.sessionId, chats);
+            try {
+                if (!chats || !Array.isArray(chats)) return;
+                console.log(`💬 [${this.sessionId}] Chats updated: ${chats.length} chats`);
+                wsManager.emitChatsUpsert(this.sessionId, chats);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing chats.upsert:`, error.message);
+            }
         });
 
         // Chats update
         this.socket.ev.on('chats.update', (chats) => {
-            wsManager.emitChatUpdate(this.sessionId, chats);
+            try {
+                if (!chats || !Array.isArray(chats)) return;
+                wsManager.emitChatUpdate(this.sessionId, chats);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing chats.update:`, error.message);
+            }
         });
 
         // Chats delete
         this.socket.ev.on('chats.delete', (chatIds) => {
-            wsManager.emitChatDelete(this.sessionId, chatIds);
+            try {
+                if (!chatIds) return;
+                wsManager.emitChatDelete(this.sessionId, chatIds);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing chats.delete:`, error.message);
+            }
         });
 
         // Contacts upsert
         this.socket.ev.on('contacts.upsert', (contacts) => {
-            console.log(`👥 [${this.sessionId}] Contacts updated: ${contacts.length} contacts`);
-            wsManager.emitContactUpdate(this.sessionId, contacts);
+            try {
+                if (!contacts || !Array.isArray(contacts)) return;
+                console.log(`👥 [${this.sessionId}] Contacts updated: ${contacts.length} contacts`);
+                wsManager.emitContactUpdate(this.sessionId, contacts);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing contacts.upsert:`, error.message);
+            }
         });
 
         // Contacts update
         this.socket.ev.on('contacts.update', (contacts) => {
-            wsManager.emitContactUpdate(this.sessionId, contacts);
+            try {
+                if (!contacts || !Array.isArray(contacts)) return;
+                wsManager.emitContactUpdate(this.sessionId, contacts);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing contacts.update:`, error.message);
+            }
         });
 
         // Presence update (typing, online, etc)
         this.socket.ev.on('presence.update', (presence) => {
-            wsManager.emitPresence(this.sessionId, presence);
+            try {
+                if (!presence) return;
+                wsManager.emitPresence(this.sessionId, presence);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing presence.update:`, error.message);
+            }
         });
 
         // Group participants update
         this.socket.ev.on('group-participants.update', (update) => {
-            wsManager.emitGroupParticipants(this.sessionId, update);
+            try {
+                if (!update) return;
+                wsManager.emitGroupParticipants(this.sessionId, update);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing group-participants.update:`, error.message);
+            }
         });
 
         // Groups update
         this.socket.ev.on('groups.update', (updates) => {
-            wsManager.emitGroupUpdate(this.sessionId, updates);
+            try {
+                if (!updates) return;
+                wsManager.emitGroupUpdate(this.sessionId, updates);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing groups.update:`, error.message);
+            }
         });
 
         // Call events
         this.socket.ev.on('call', (calls) => {
-            wsManager.emitCall(this.sessionId, calls);
+            try {
+                if (!calls) return;
+                wsManager.emitCall(this.sessionId, calls);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing call:`, error.message);
+            }
         });
 
         // Labels (for business accounts)
         this.socket.ev.on('labels.edit', (label) => {
-            wsManager.emitLabels(this.sessionId, { type: 'edit', label });
+            try {
+                if (!label) return;
+                wsManager.emitLabels(this.sessionId, { type: 'edit', label });
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing labels.edit:`, error.message);
+            }
         });
 
         this.socket.ev.on('labels.association', (association) => {
-            wsManager.emitLabels(this.sessionId, { type: 'association', association });
+            try {
+                if (!association) return;
+                wsManager.emitLabels(this.sessionId, { type: 'association', association });
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing labels.association:`, error.message);
+            }
         });
     }
 
