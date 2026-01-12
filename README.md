@@ -455,6 +455,7 @@ POST /chats/send-document
   "documentUrl": "https://example.com/document.pdf",
   "filename": "document.pdf",
   "mimetype": "application/pdf",
+  "caption": "Here is the document you requested",
   "typingTime": 1000,
   "replyTo": null
 }
@@ -467,6 +468,7 @@ POST /chats/send-document
 | `documentUrl` | string | Required. Direct URL to document |
 | `filename` | string | Required. Filename to display |
 | `mimetype` | string | Optional. MIME type (default: application/pdf) |
+| `caption` | string | Optional. Caption text for the document |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
 

@@ -1769,10 +1769,11 @@
                     documentUrl: 'https://example.com/document.pdf',
                     filename: 'document.pdf',
                     mimetype: 'application/pdf',
+                    caption: 'Document caption here',
                     typingTime: 0,
                     replyTo: null
                 };
-                helpText = '📄 <code>mimetype</code>: MIME type. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to (optional).';
+                helpText = '📄 <code>caption</code>: Optional text caption. <code>mimetype</code>: MIME type. <code>replyTo</code>: Message ID to reply to (optional).';
             } else if (path.includes('/chats/send-location')) {
                 body = {
                     sessionId: '',

@@ -390,8 +390,8 @@
  * /api/whatsapp/chats/send-document:
  *   post:
  *     tags: [Messaging]
- *     summary: Send document
- *     description: Send a document/file. Optionally reply to a specific message.
+ *     summary: Send document with caption
+ *     description: Send a document/file with optional caption. Optionally reply to a specific message.
  *     requestBody:
  *       required: true
  *       content:
@@ -413,6 +413,10 @@
  *               mimetype:
  *                 type: string
  *                 example: application/pdf
+ *               caption:
+ *                 type: string
+ *                 example: Here is the document you requested
+ *                 description: Optional caption for the document
  *               typingTime:
  *                 type: integer
  *               replyTo:

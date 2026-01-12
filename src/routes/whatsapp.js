@@ -379,7 +379,7 @@ router.post('/chats/send-image', checkSession, async (req, res) => {
 // Send document
 router.post('/chats/send-document', checkSession, async (req, res) => {
     try {
-        const { chatId, documentUrl, filename, mimetype, typingTime = 0, replyTo = null } = req.body;
+        const { chatId, documentUrl, filename, mimetype, caption = '', typingTime = 0, replyTo = null } = req.body;
         
         if (!chatId || !documentUrl || !filename) {
             return res.status(400).json({
@@ -388,7 +388,7 @@ router.post('/chats/send-document', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendDocument(chatId, documentUrl, filename, mimetype, typingTime, replyTo);
+        const result = await req.session.sendDocument(chatId, documentUrl, filename, mimetype, caption, typingTime, replyTo);
         res.json(result);
     } catch (error) {
         res.status(500).json({

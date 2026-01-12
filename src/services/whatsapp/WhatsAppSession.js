@@ -619,7 +619,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', typingTime = 0, replyTo = null) {
+    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', caption = '', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -633,7 +633,8 @@ class WhatsAppSession {
             const messageContent = {
                 document: { url: documentUrl },
                 fileName: filename,
-                mimetype: mimetype
+                mimetype: mimetype,
+                caption: caption || undefined
             };
             const messageOptions = {};
             
